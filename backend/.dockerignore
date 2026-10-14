@@ -1,0 +1,9 @@
+.venv
+venv
+__pycache__
+*.pyc
+*.pyo
+.pytest_cache
+.env
+.env.*
+*.log

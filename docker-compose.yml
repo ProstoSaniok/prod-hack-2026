@@ -1,0 +1,20 @@
+name: prod-hack-2026
+
+services:
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "4200:80"
+    depends_on:
+      - backend
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    environment:
+      CORS_ORIGINS: http://localhost:4200
+    ports:
+      - "8000:8000"
