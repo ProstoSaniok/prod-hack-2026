@@ -1,0 +1,70 @@
+---
+- name: Validate coolify_state parameter
+  ansible.builtin.assert:
+    that:
+      - coolify_state in ['present', 'absent', 'latest', 'stopped']
+    fail_msg: >-
+      Invalid coolify_state '{{ coolify_state }}'.
+      Must be one of: present, absent, latest, stopped.
+    quiet: true
+  tags: always
+
+- name: Detect Coolify installation status
+  ansible.builtin.include_tasks: detect.yaml
+  tags: always
+
+- name: Uninstall Coolify
+  ansible.builtin.include_tasks: delete.yaml
+  when: coolify_state == 'absent'
+  tags: coolify, deletion
+
+- name: Stop Coolify
+  ansible.builtin.include_tasks: stop.yaml
+  when:
+    - coolify_state == 'stopped'
+    - _coolify_installed
+  tags: coolify, stop
+
+- name: Ensure Docker network exists
+  become: true
+  community.docker.docker_network:
+    name: "{{ coolify_docker_network }}"
+    driver: bridge
+    state: present
+  when: coolify_state in ['present', 'latest']
+  tags: coolify, docker
+
+- name: Install Coolify (fresh)
+  ansible.builtin.include_tasks: install.yaml
+  when:
+    - coolify_state in ['present', 'latest']
+    - not _coolify_installed
+  tags: coolify, installation
+
+- name: Update Coolify (existing)
+  ansible.builtin.include_tasks: update.yaml
+  when:
+    - coolify_state == 'latest'
+    - _coolify_installed
+  tags: coolify, update
+
+- name: Ensure Coolify is configured and running
+  when:
+    - coolify_state == 'present'
+    - _coolify_installed
+  tags: coolify, configuration
+  block:
+    - name: Ensure configuration is up to date
+      ansible.builtin.include_tasks: configure.yaml
+
+    - name: Ensure services are running
+      ansible.builtin.include_tasks: start.yaml
+
+- name: Show Coolify status
+  ansible.builtin.debug:
+    msg:
+      - "State: {{ coolify_state }}"
+      - "Installed: {{ _coolify_installed }}"
+      - "URL: http://{{ ansible_host }}:{{ coolify_app_port }}"
+  when: coolify_state in ['present', 'latest']
+  tags: coolify, status

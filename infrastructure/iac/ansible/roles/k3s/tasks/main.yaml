@@ -1,0 +1,80 @@
+---
+- name: Validate k3s_state parameter
+  ansible.builtin.assert:
+    that:
+      - k3s_state in ['installed', 'latest', 'absent']
+    fail_msg: "k3s_state must be one of: installed, latest, absent"
+    quiet: true
+  tags: always
+
+- name: Check if k3s binary exists
+  ansible.builtin.stat:
+    path: /usr/local/bin/k3s
+  register: _k3s_binary
+  tags: always
+
+- name: Set k3s installation fact
+  ansible.builtin.set_fact:
+    _k3s_installed: "{{ _k3s_binary.stat.exists }}"
+  tags: always
+
+- name: Display k3s state
+  ansible.builtin.debug:
+    msg:
+      - "Desired state: {{ k3s_state }}"
+      - "Currently installed: {{ _k3s_installed }}"
+    verbosity: 1
+  tags: always
+
+# The actual k3s installation/management is handled by the external
+# k3s-io/k3s-ansible collection (k3s.orchestration.k3s_server) which
+# is invoked directly from containers.yaml. This role only provides
+# detection and state validation as a lightweight wrapper.
+
+- name: Uninstall k3s
+  when:
+    - k3s_state == 'absent'
+    - _k3s_installed | bool
+  tags: k3s, uninstall
+  block:
+    - name: Run k3s uninstall script
+      ansible.builtin.command:
+        cmd: /usr/local/bin/k3s-uninstall.sh
+        removes: /usr/local/bin/k3s-uninstall.sh
+      register: _k3s_uninstall
+      changed_when: _k3s_uninstall.rc == 0
+
+    - name: Run k3s agent uninstall script (if present)
+      ansible.builtin.command:
+        cmd: /usr/local/bin/k3s-agent-uninstall.sh
+        removes: /usr/local/bin/k3s-agent-uninstall.sh
+      register: _k3s_agent_uninstall
+      changed_when: _k3s_agent_uninstall.rc == 0
+
+    - name: Verify k3s binary is removed
+      ansible.builtin.stat:
+        path: /usr/local/bin/k3s
+      register: _k3s_post_uninstall
+
+    - name: Confirm k3s removal
+      ansible.builtin.assert:
+        that:
+          - not _k3s_post_uninstall.stat.exists
+        fail_msg: "k3s binary still exists after uninstall"
+        quiet: true
+
+- name: Show skip message when already installed
+  ansible.builtin.debug:
+    msg: "k3s is already installed — use the k3s.orchestration collection for upgrades"
+  when:
+    - k3s_state in ['installed', 'latest']
+    - _k3s_installed | bool
+  tags: k3s
+
+- name: Show skip message when not installed and absent requested
+  ansible.builtin.debug:
+    msg: "k3s is not installed — nothing to remove"
+  when:
+    - k3s_state == 'absent'
+    - not (_k3s_installed | bool)
+  tags: k3s

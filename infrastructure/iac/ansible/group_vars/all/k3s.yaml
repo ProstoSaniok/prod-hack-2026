@@ -1,0 +1,18 @@
+---
+api_port: 6443
+server_group: k3s_servers
+agent_group: k3s_agents
+
+systemd_dir: /etc/systemd/system
+k3s_server_location: /var/lib/rancher/k3s
+
+extra_install_envs: {}
+extra_service_envs: []
+
+k3s_version: v1.34.1+k3s1
+
+# Set via ANSIBLE_K3S_TOKEN env var or override per-host with ansible-vault
+# Generate with: openssl rand -base64 48
+token: "{{ lookup('env', 'ANSIBLE_K3S_TOKEN') }}"
+
+api_endpoint: "{{ hostvars[groups['server'][0]]['ansible_host'] | default(groups['server'][0]) }}"

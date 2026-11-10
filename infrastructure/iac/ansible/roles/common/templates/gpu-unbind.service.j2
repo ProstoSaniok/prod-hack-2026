@@ -1,0 +1,18 @@
+[Unit]
+Description=Unbind {{ item.label }} ({{ item.pci_id }}) and enable runtime PM
+After=multi-user.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/bin/sh -c '\
+  if [ -e /sys/bus/pci/drivers/{{ item.driver }}/{{ item.pci_id }} ]; then \
+    echo "{{ item.pci_id }}" > /sys/bus/pci/drivers/{{ item.driver }}/unbind; \
+  fi && \
+  echo auto > /sys/bus/pci/devices/{{ item.pci_id }}/power/control'
+ExecStop=/bin/sh -c '\
+  echo on > /sys/bus/pci/devices/{{ item.pci_id }}/power/control && \
+  echo "{{ item.pci_id }}" > /sys/bus/pci/drivers/{{ item.driver }}/bind'
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,63 @@
+---
+- name: Ensure tcp_bbr module is loaded and persistent
+  become: true
+  community.general.modprobe:
+    name: tcp_bbr
+    state: present
+    persistent: present
+  tags: optimization
+
+- name: Configure sysctl parameters
+  become: true
+  ansible.posix.sysctl:
+    name: "{{ item.key }}"
+    value: "{{ item.value }}"
+    state: present
+    sysctl_set: true
+    reload: true
+  loop: "{{ sysctl_tuning | dict2items }}"
+  tags: optimization
+
+- name: Configure file handle limits
+  become: true
+  ansible.builtin.lineinfile:
+    path: /etc/security/limits.conf
+    regexp: "^{{ item.user | regex_escape }}.*{{ item.type }}"
+    line: "{{ item.user }} - nofile {{ item.limit }}"
+    create: true
+    mode: "0644"
+  loop:
+    - { user: "root", type: "soft", limit: "65536" }
+    - { user: "root", type: "hard", limit: "65536" }
+    - { user: "*", type: "soft", limit: "65536" }
+    - { user: "*", type: "hard", limit: "65536" }
+  tags: limits
+
+- name: Deploy GPU unbind systemd units
+  become: true
+  ansible.builtin.template:
+    src: gpu-unbind.service.j2
+    dest: /etc/systemd/system/gpu-unbind-{{ item.label }}.service
+    mode: "0644"
+  loop: "{{ gpu_unbind_devices }}"
+  notify: Reload systemd
+  tags: optimization
+
+- name: Enable and start GPU unbind service
+  become: true
+  ansible.builtin.systemd:
+    name: gpu-unbind-{{ item.label }}
+    enabled: true
+    state: started
+  loop: "{{ gpu_unbind_devices }}"
+  tags: optimization
+
+- name: NIC offloads
+  when: enable_nic_offloads | bool
+  become: true
+  ansible.builtin.template:
+    src: nic-offloads.j2
+    dest: /etc/network/if-up.d/{{ ansible_default_ipv4.interface }}
+    mode: "0755"
+  notify: Restart networking
+  tags: optimization

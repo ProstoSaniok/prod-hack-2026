@@ -1,0 +1,75 @@
+---
+- name: Check if Coolify compose file exists
+  ansible.builtin.stat:
+    path: "{{ coolify_base_dir }}/source/{{ coolify_compose_files[0] }}"
+  register: _coolify_compose_stat
+  tags: always
+
+- name: Set installation fact
+  ansible.builtin.set_fact:
+    _coolify_installed: "{{ _coolify_compose_stat.stat.exists }}"
+  tags: always
+
+- name: Check if .env file exists
+  ansible.builtin.stat:
+    path: "{{ coolify_base_dir }}/source/.env"
+  register: _coolify_env_stat
+  tags: always
+
+- name: Set env file fact
+  ansible.builtin.set_fact:
+    _coolify_env_exists: "{{ _coolify_env_stat.stat.exists }}"
+  tags: always
+
+- name: Check Coolify container status
+  community.docker.docker_container_info:
+    name: "{{ item }}"
+  loop: "{{ coolify_container_names }}"
+  register: _coolify_containers
+  failed_when: false
+  when: _coolify_installed | bool
+  tags: always
+
+- name: Determine Coolify health status
+  ansible.builtin.set_fact:
+    _coolify_healthy: >-
+      {{
+        _coolify_containers.results
+        | default([])
+        | selectattr('exists', 'defined')
+        | selectattr('exists', 'equalto', true)
+        | selectattr('container', 'defined')
+        | map(attribute='container')
+        | selectattr('State.Health', 'defined')
+        | selectattr('State.Health.Status', 'equalto', 'healthy')
+        | list
+        | length == coolify_container_names | length
+      }}
+    _coolify_running: >-
+      {{
+        _coolify_containers.results
+        | default([])
+        | selectattr('exists', 'defined')
+        | selectattr('exists', 'equalto', true)
+        | list
+        | length == coolify_container_names | length
+      }}
+  when: _coolify_installed | bool
+  tags: always
+
+- name: Set default health facts when not installed
+  ansible.builtin.set_fact:
+    _coolify_healthy: false
+    _coolify_running: false
+  when: not (_coolify_installed | bool)
+  tags: always
+
+- name: Display detected state
+  ansible.builtin.debug:
+    msg:
+      - "Installed: {{ _coolify_installed }}"
+      - "Env exists: {{ _coolify_env_exists }}"
+      - "Running: {{ _coolify_running }}"
+      - "Healthy: {{ _coolify_healthy }}"
+    verbosity: 1
+  tags: always

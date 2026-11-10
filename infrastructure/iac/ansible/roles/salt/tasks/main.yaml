@@ -1,0 +1,14 @@
+---
+- name: Validate salt_role
+  ansible.builtin.assert:
+    that:
+      - salt_role in ["master", "minion"]
+    fail_msg: "salt_role must be either 'master' or 'minion'"
+
+- import_tasks: repo.yaml
+
+- import_tasks: master.yaml
+  when: salt_role == "master"
+
+- import_tasks: minion.yaml
+  when: salt_role == "minion"

@@ -1,0 +1,3 @@
+# Store image contents directly in Git; this repository does not use Git LFS.
+*.png -text -filter -diff -merge
+*.gif -text -filter -diff -merge

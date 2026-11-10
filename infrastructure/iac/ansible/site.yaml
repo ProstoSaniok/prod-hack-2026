@@ -1,0 +1,16 @@
+---
+- name: Import base system setup
+  ansible.builtin.import_playbook: base_setup.yaml
+  tags: [init]
+
+- name: Import Containers setup
+  ansible.builtin.import_playbook: containers.yaml
+  tags: [containers]
+
+- name: Import application deployment
+  ansible.builtin.import_playbook: apps.yaml
+  tags: [apps]
+
+- name: Import post-deployment validation
+  ansible.builtin.import_playbook: validation.yaml
+  tags: [validation]

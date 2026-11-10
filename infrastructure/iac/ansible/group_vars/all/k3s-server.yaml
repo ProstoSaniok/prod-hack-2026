@@ -1,0 +1,7 @@
+---
+kubeconfig: ~/.kube/config.new
+user_kubectl: false
+cluster_context: k3s-ansible
+use_external_database: false
+
+extra_server_args: ""

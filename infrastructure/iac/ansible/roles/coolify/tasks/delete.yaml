@@ -1,0 +1,131 @@
+---
+- name: Stop Coolify services gracefully
+  become: true
+  community.docker.docker_compose_v2:
+    project_src: "{{ coolify_base_dir }}/source"
+    files: "{{ coolify_compose_files }}"
+    state: absent
+    remove_orphans: true
+  register: _coolify_compose_down
+  failed_when:
+    - _coolify_compose_down.rc is defined
+    - _coolify_compose_down.rc != 0
+    - "'not found' not in (_coolify_compose_down.msg | default(''))"
+    - "'no such file' not in (_coolify_compose_down.msg | default('') | lower)"
+  when: _coolify_installed | bool
+  tags: coolify, deletion
+
+- name: Force-remove any remaining Coolify containers
+  become: true
+  community.docker.docker_container:
+    name: "{{ item }}"
+    state: absent
+    force_kill: true
+  loop: "{{ coolify_container_names }}"
+  register: _coolify_remove_containers
+  failed_when:
+    - _coolify_remove_containers is failed
+    - "'No such container' not in (_coolify_remove_containers.msg | default(''))"
+  tags: coolify, docker, deletion
+
+- name: Remove Coolify Docker volumes
+  become: true
+  community.docker.docker_volume:
+    name: "{{ item }}"
+    state: absent
+  loop:
+    - coolify-db
+    - coolify-redis
+  register: _coolify_remove_volumes
+  failed_when:
+    - _coolify_remove_volumes is failed
+    - "'no such volume' not in (_coolify_remove_volumes.msg | default('') | lower)"
+    - "'not found' not in (_coolify_remove_volumes.msg | default('') | lower)"
+  when: coolify_remove_data_on_absent | bool
+  tags: coolify, docker, deletion
+
+- name: Remove Coolify source files (always on absent)
+  become: true
+  ansible.builtin.file:
+    path: "{{ coolify_base_dir }}/source"
+    state: absent
+  tags: coolify, files, deletion
+
+- name: Remove Coolify data directories
+  become: true
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: absent
+  loop:
+    - "{{ coolify_base_dir }}/ssh"
+    - "{{ coolify_base_dir }}/applications"
+    - "{{ coolify_base_dir }}/databases"
+    - "{{ coolify_base_dir }}/backups"
+    - "{{ coolify_base_dir }}/services"
+    - "{{ coolify_base_dir }}/proxy"
+    - "{{ coolify_base_dir }}/webhooks-during-maintenance"
+    - "{{ coolify_base_dir }}/sentinel"
+  when: coolify_remove_data_on_absent | bool
+  tags: coolify, files, deletion
+
+- name: Remove Coolify base directory (if full removal requested)
+  become: true
+  ansible.builtin.file:
+    path: "{{ coolify_base_dir }}"
+    state: absent
+  when: coolify_remove_data_on_absent | bool
+  tags: coolify, files, deletion
+
+- name: Remove Coolify Docker network
+  become: true
+  community.docker.docker_network:
+    name: "{{ coolify_docker_network }}"
+    state: absent
+    force: true
+  register: _coolify_remove_network
+  failed_when:
+    - _coolify_remove_network is failed
+    - "'not found' not in (_coolify_remove_network.msg | default('') | lower)"
+    - "'network coolify not found' not in (_coolify_remove_network.msg | default('') | lower)"
+  when: coolify_remove_data_on_absent | bool
+  tags: coolify, docker, deletion
+
+- name: Prune Coolify container images
+  become: true
+  community.docker.docker_prune:
+    images: true
+    images_filters:
+      reference: "ghcr.io/coollabsio/*"
+  register: _coolify_prune_images
+  failed_when:
+    - _coolify_prune_images is failed
+    - "'permission denied' in (_coolify_prune_images.msg | default('') | lower)"
+  when: coolify_remove_data_on_absent | bool
+  tags: coolify, docker, deletion
+
+- name: Verify Coolify containers are removed
+  community.docker.docker_container_info:
+    name: "{{ item }}"
+  loop: "{{ coolify_container_names }}"
+  register: _coolify_post_delete
+  failed_when: false
+  tags: coolify, deletion
+
+- name: Confirm containers are gone
+  ansible.builtin.assert:
+    that:
+      - not (item.exists | default(false))
+    fail_msg: "Container {{ item.item }} still exists after uninstall"
+    quiet: true
+  loop: "{{ _coolify_post_delete.results }}"
+  loop_control:
+    label: "{{ item.item }}"
+  failed_when: false
+  tags: coolify, deletion
+
+- name: Show uninstallation summary
+  ansible.builtin.debug:
+    msg:
+      - "Coolify has been uninstalled"
+      - "Data removed: {{ coolify_remove_data_on_absent | bool }}"
+  tags: coolify, deletion

@@ -1,0 +1,132 @@
+services:
+  postgresql:
+    image: ${POSTGRES_IMAGE:-docker.io/postgres:18-alpine}
+    command:
+      - -c
+      - config_file=/etc/postgresql/postgresql.conf
+    configs:
+      - source: postgresql_config
+        target: /etc/postgresql/postgresql.conf
+      - source: postgresql_hba_config
+        target: /etc/postgresql/pg_hba.conf
+    env_file:
+      - path: ./infrastructure/configs/postgresql/.env.template
+        required: true
+      - path: ./infrastructure/configs/postgresql/.env
+        required: false
+    healthcheck:
+      test: ["CMD", "sh", "-c", "pg_isready -U postgres -d postgres"]
+      interval: 30s
+      timeout: 5s
+      start_period: 5s
+      start_interval: 2s
+      retries: 5
+    networks:
+      - default
+    oom_kill_disable: true
+    restart: unless-stopped
+    shm_size: 128mb
+    volumes:
+      - type: volume
+        source: postgresql_data
+        target: /var/lib/postgresql/data
+
+  valkey:
+    image: ${VALKEY_IMAGE:-docker.io/valkey/valkey:9-alpine}
+    command: valkey-server /usr/local/etc/valkey/valkey.conf
+    configs:
+      - source: valkey_config
+        target: /usr/local/etc/valkey/valkey.conf
+    env_file:
+      - path: ./infrastructure/configs/valkey/.env.template
+        required: true
+      - path: ./infrastructure/configs/valkey/.env
+        required: false
+    healthcheck:
+      test:
+        ["CMD", "sh", "-c", "valkey-cli -p 6379 --pass valkey ping | grep PONG"]
+      interval: 10s
+      timeout: 2s
+      start_period: 5s
+      start_interval: 2s
+      retries: 3
+    networks:
+      - default
+    restart: unless-stopped
+    shm_size: 4mb
+    volumes:
+      - type: volume
+        source: valkey_data
+        target: /data
+        read_only: false
+
+  s3:
+    image: ${RUSTFS_IMAGE:-docker.io/rustfs/rustfs:1.0.0-alpha.82}
+    env_file:
+      - path: ./infrastructure/configs/rustfs/.env.template
+        required: true
+      - path: ./infrastructure/configs/rustfs/.env
+        required: false
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "sh",
+          "-c",
+          "curl -f http://localhost:9000/health && curl -f http://localhost:9001/rustfs/console/health",
+        ]
+      interval: 30s
+      timeout: 5s
+      start_period: 5s
+      start_interval: 5s
+      retries: 3
+    networks:
+      - default
+    restart: unless-stopped
+    shm_size: 4mb
+    volumes:
+      - type: volume
+        source: rustfs_data
+        target: /data
+
+  s3-init:
+    image: registry.spirit.t-education.com/cicd-images/mc:latest
+    entrypoint: >
+      sh -c "until mc alias set default $$S3_URL $$S3_ACCESS_KEY $$S3_SECRET_KEY; do sleep 1; done &&
+        mc mb --ignore-existing default/backend"
+    depends_on:
+      s3:
+        restart: false
+        condition: service_healthy
+        required: true
+    env_file:
+      - path: ./infrastructure/configs/s3/.env.template
+        required: true
+      - path: ./infrastructure/configs/s3/.env
+        required: false
+    networks:
+      - default
+    restart: no
+    shm_size: 4mb
+
+networks:
+  default:
+    driver: bridge
+    name: $COMPOSE_PROJECT_NAME
+    attachable: false
+    enable_ipv4: true
+    enable_ipv6: true
+    internal: false
+
+volumes:
+  postgresql_data:
+  valkey_data:
+  rustfs_data:
+
+configs:
+  postgresql_config:
+    file: ./infrastructure/configs/postgresql/postgresql.conf
+  postgresql_hba_config:
+    file: ./infrastructure/configs/postgresql/pg_hba.conf
+  valkey_config:
+    file: ./infrastructure/configs/valkey/valkey.conf

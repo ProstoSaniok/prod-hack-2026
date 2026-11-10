@@ -1,0 +1,23 @@
+---
+profile: production
+
+exclude_paths:
+  - external_roles/
+  - .ansible/
+
+skip_list:
+  - yaml[line-length]
+
+warn_list:
+  - jinja[spacing]
+
+enable_list:
+  - fqcn
+  - no-changed-when
+  - no-handler
+  - name[casing]
+  - key-order
+
+use_default_rules: true
+
+offline: false

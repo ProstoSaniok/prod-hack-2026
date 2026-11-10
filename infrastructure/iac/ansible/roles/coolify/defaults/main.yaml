@@ -1,0 +1,64 @@
+---
+# present  - Install if missing, ensure running if already installed
+# latest   - Install if missing, update to latest if already installed
+# absent   - Uninstall Coolify (see coolify_remove_data_on_absent)
+# stopped  - Stop Coolify services without removing
+coolify_state: present
+
+coolify_remove_data_on_absent: false
+
+coolify_base_dir: /data/coolify
+
+coolify_owner: "9999"
+coolify_group: root
+
+coolify_compose_files:
+  - docker-compose.yml
+  - docker-compose.prod.yml
+
+coolify_docker_network: coolify
+
+# Used for health checks and cleanup
+coolify_container_names:
+  - coolify
+  - coolify-db
+  - coolify-redis
+  - coolify-realtime
+
+coolify_registry_url: "ghcr.io"
+coolify_image_tag: "latest"
+
+# Auto-generated on first install if left empty
+coolify_app_id: ""
+coolify_app_name: "Coolify"
+coolify_app_key: ""
+coolify_app_env: "production"
+coolify_app_port: 8000
+
+coolify_php_memory_limit: "256M"
+coolify_php_fpm_pm_control: "dynamic"
+coolify_php_fpm_pm_start_servers: 1
+coolify_php_fpm_pm_min_spare_servers: 1
+coolify_php_fpm_pm_max_spare_servers: 10
+
+coolify_db_username: "coolify"
+coolify_db_password: ""
+coolify_db_database: "coolify"
+
+coolify_redis_password: ""
+
+coolify_soketi_port: 6001
+coolify_soketi_debug: "false"
+
+# Auto-generated on first install if left empty
+coolify_pusher_app_id: ""
+coolify_pusher_app_key: ""
+coolify_pusher_app_secret: ""
+
+coolify_root_username: ""
+coolify_root_user_email: ""
+coolify_root_user_password: ""
+
+coolify_health_retries: 20
+coolify_health_delay: 15
+coolify_compose_wait_timeout: 300

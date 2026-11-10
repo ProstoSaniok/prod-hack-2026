@@ -1,0 +1,10 @@
+{
+  "groupName": "replace-with-authorized-group",
+  "systemName": "prodguild-backend",
+  "port": 18080,
+  "scrapeInterval": 30000,
+  "scrapeTimeout": 5000,
+  "metricsPath": "/metrics",
+  "perTargetLimit": 5000,
+  "staticLabels": {"service": "backend", "application": "prodguild"}
+}

@@ -1,0 +1,61 @@
+
+---
+system_packages:
+  essential:
+    - curl
+    - wget
+    - git
+    - vim
+    - gnupg
+    - ca-certificates
+    - openssl
+    - apt-transport-https
+    - iproute2
+    - net-tools
+    - unzip
+    - tree
+    - bash-completion
+    - tmux
+    - rsync
+    - lm-sensors
+    - strace
+    - ltrace
+    - lsscsi
+    - lshw
+    - jq
+    - yq
+    - socat
+    - netcat-traditional
+    - vmtouch
+    - gdb
+    - gcc
+    - cron
+    - bat
+    - sqlite3
+    - python3-docker
+    - acpi
+    - attr
+  monitoring:
+    - htop
+    - atop
+    - psmisc  # pstree
+    - iotop
+    - nethogs
+    - nload
+    - sysstat
+    - dstat
+    - smartmontools
+    - tcpdump
+    - conntrack
+    - nmap
+    - iftop
+    - iperf3
+    - fio
+    - traceroute
+    - mtr
+    - ngrep
+    - tcpflow
+  security:
+    - auditd
+    - fail2ban
+    - nftables

@@ -1,0 +1,19 @@
+# Build-only fallback for the owned preview; run with --project-directory .
+# Official multiarch pins inspected 2026-10-17. No runtime secrets/build args.
+services:
+  backend:
+    image: ${BACKEND_IMAGE:?Set a unique source-SHA local image tag}
+    build:
+      context: ./src/backend
+      dockerfile: Containerfile
+      target: app
+      args:
+        PY_IMAGE: python:3.12.15-slim-bookworm@sha256:34386ef0cb081344d7ec1c103ba398e6e9f64e9ab3a1509accc92a4e24a07258
+  frontend:
+    image: ${FRONTEND_IMAGE:?Set a unique source-SHA local image tag}
+    build:
+      context: ./src/frontend
+      dockerfile: Containerfile
+      args:
+        NODE_IMAGE: node:22-bookworm-slim@sha256:c3de60bf2f9dd0ac6370e6117950ff62d6e339527e7472301c9c78a017978392
+        NGINX_IMAGE: nginx:stable-alpine@sha256:970364228b1e4f932abc22d321932816782cca8a20b85a77552a7cfe9acfb3b5

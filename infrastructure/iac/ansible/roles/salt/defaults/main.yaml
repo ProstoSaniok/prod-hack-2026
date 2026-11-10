@@ -1,0 +1,6 @@
+---
+salt_role: minion
+
+salt_master: salt.example.com
+salt_master_id: master
+salt_minion_id: "{{ inventory_hostname }}"

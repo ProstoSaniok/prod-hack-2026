@@ -1,0 +1,51 @@
+---
+ansible_become: true
+ansible_become_method: sudo
+ansible_python_interpreter: /usr/bin/python3
+
+# System configuration
+timezone: UTC
+system_locale: en_US.UTF-8
+
+# Monitoring
+monitoring_enabled: true
+
+# Logs
+common_journal_retention_days: 21
+common_journal_max_disk_limit: "5%"
+common_atop_retention_days: 3
+
+# Optimizations
+enable_nic_offloads: false
+
+# User management
+admin_users:
+  - name: "{{ ansible_user }}"
+    groups: "sudo"
+    shell: /bin/bash
+    ssh_keys: "{{ admin_ssh_keys | default([]) }}"
+    state: present
+
+# Containers management
+containers:
+  docker:
+    enabled: false
+    state: absent
+  k3s:
+    enabled: false
+    state: absent
+
+# Applications management
+applications:
+  borgbackup:
+    enabled: false
+  tailscale:
+    enabled: false
+  salt:
+    enabled: false
+  coolify:
+    enabled: false
+    state: latest
+  dokploy:
+    enabled: false
+    state: latest

@@ -1,0 +1,99 @@
+---
+docker_edition: "ce"
+docker_install_compose_plugin: true
+docker_users:
+  - "{{ ansible_user }}"
+_docker_daemon_options_base:
+  debug: false
+  init: false
+  live-restore: true
+  shutdown-timeout: 60
+  default-runtime: "runc"
+  raw-logs: false
+
+  default-cgroupns-mode: "private"
+  containerd-namespace: "docker"
+  containerd-plugins-namespace: "docker-plugins"
+
+  selinux-enabled: false
+  icc: true
+  authorization-plugins: []
+  allow-direct-routing: false
+  no-new-privileges: true
+  # userns-remap: default
+
+  ipv6: true
+  ip-forward: true
+  iptables: true
+  ip6tables: true
+  ip-masq: false
+  userland-proxy: false
+  mtu: 1500
+  default-address-pools:
+    - base: "10.200.0.0/16"
+      size: 24
+  default-network-opts: {}
+
+  dns:
+    - "100.100.100.100"
+    - "1.1.1.1"
+    - "8.8.8.8"
+  dns-search:
+    - "headnet.itqdev.xyz"
+  dns-opts: []
+
+  storage-driver: "overlay2"
+  storage-opts: []
+  default-shm-size: "16M"
+
+  builder:
+    gc:
+      enabled: true
+      defaultReservedSpace: "10GB"
+      policy:
+        - filter:
+            - "type=source.local"
+          maxUsedSpace: "512MB"
+          keepDuration: "48h"
+        - maxUsedSpace: "100GB"
+          keepDuration: "1440h"
+          reservedSpace: "10GB"
+        - all: true
+          reservedSpace: "50GB"
+          maxUsedSpace: "200GB"
+          minFreeSpace: "20GB"
+
+  log-driver: "json-file"
+  log-format: "text"
+  log-level: ""
+  log-opts:
+    labels: "local"
+    env: "os,customer"
+    max-size: "50m"
+    max-file: "5"
+    cache-disabled: "false"
+    cache-max-size: "20m"
+    cache-max-file: "5"
+    cache-compress: "true"
+
+  default-ulimits:
+    nofile:
+      Name: "nofile"
+      Soft: 64000
+      Hard: 64000
+
+  registry-mirrors: []
+  insecure-registries: []
+  max-download-attempts: 5
+  max-concurrent-downloads: 3
+  max-concurrent-uploads: 3
+
+  experimental: false
+  features:
+    cdi: true
+    containerd-snapshotter: false
+
+  labels: []
+
+  exec-opts: []
+docker_daemon_options: "{{ _docker_daemon_options_base | combine(docker_daemon_options_host | default({}), recursive=True) }}"

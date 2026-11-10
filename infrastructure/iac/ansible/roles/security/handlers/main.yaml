@@ -1,0 +1,6 @@
+---
+- name: Reload nftables
+  ansible.builtin.systemd:
+    name: nftables
+    state: reloaded
+  tags: security, nftables

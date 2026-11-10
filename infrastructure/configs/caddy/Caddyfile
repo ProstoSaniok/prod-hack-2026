@@ -1,0 +1,54 @@
+{
+	log {
+		output stdout
+		format json
+		level INFO
+	}
+}
+
+:80 {
+	encode gzip zstd
+
+	# Operational endpoints stay private; avoid misleading SPA health responses.
+	# Internal scraping and backend health probes bypass this public listener.
+	@private_backend path /metrics /metrics/* /healthcheck /ready
+	handle @private_backend {
+		respond "Not found" 404
+	}
+
+	# Ordinary handle preserves /api/v1 and existing /auth prefixes unchanged.
+	# Swagger, its OAuth redirect, ReDoc and the schema are deliberately public.
+	@backend path /api /api/* /auth /auth/* /docs /docs/oauth2-redirect /openapi.json /redoc
+	handle @backend {
+		request_body {
+			max_size 5976883
+		}
+
+		reverse_proxy backend:8080 {
+			fail_duration 30s
+			max_fails 10
+
+			health_uri /healthcheck
+			health_interval 10s
+			health_timeout 2s
+		}
+	}
+
+	handle {
+		request_body {
+			max_size 5976883
+		}
+
+		reverse_proxy frontend:80 {
+			fail_duration 30s
+			max_fails 10
+		}
+	}
+}
+
+:8404 {
+	metrics /metrics
+	log {
+		output discard
+	}
+}

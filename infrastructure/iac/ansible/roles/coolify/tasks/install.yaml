@@ -1,0 +1,71 @@
+---
+- name: Install prerequisites (apt)
+  become: true
+  ansible.builtin.apt:
+    name:
+      - curl
+      - openssl
+    state: present
+    update_cache: true
+    cache_valid_time: 3600
+  tags: coolify, prerequisites, installation
+
+- name: Ensure Docker service is started and enabled
+  become: true
+  ansible.builtin.systemd:
+    name: docker
+    state: started
+    enabled: true
+  tags: coolify, docker, installation
+
+- name: Create Coolify directory structure
+  become: true
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: "{{ coolify_owner }}"
+    group: "{{ coolify_group }}"
+    mode: "0750"
+  loop:
+    - "{{ coolify_base_dir }}/source"
+    - "{{ coolify_base_dir }}/ssh/keys"
+    - "{{ coolify_base_dir }}/ssh/mux"
+    - "{{ coolify_base_dir }}/applications"
+    - "{{ coolify_base_dir }}/databases"
+    - "{{ coolify_base_dir }}/backups"
+    - "{{ coolify_base_dir }}/services"
+    - "{{ coolify_base_dir }}/proxy/dynamic"
+    - "{{ coolify_base_dir }}/webhooks-during-maintenance"
+  tags: coolify, files, installation
+
+- name: Deploy Coolify compose files from templates
+  become: true
+  ansible.builtin.template:
+    src: "{{ item.src }}"
+    dest: "{{ coolify_base_dir }}/source/{{ item.dest }}"
+    owner: "{{ coolify_owner }}"
+    group: "{{ coolify_group }}"
+    mode: "0644"
+  loop:
+    - src: docker-compose.yml.j2
+      dest: docker-compose.yml
+    - src: docker-compose.prod.yml.j2
+      dest: docker-compose.prod.yml
+  loop_control:
+    label: "{{ item.dest }}"
+  tags: coolify, files, installation
+
+- name: Configure Coolify environment
+  ansible.builtin.include_tasks: configure.yaml
+  tags: coolify, configuration, installation
+
+- name: Start Coolify services
+  ansible.builtin.include_tasks: start.yaml
+  tags: coolify, start, installation
+
+- name: Show installation success message
+  ansible.builtin.debug:
+    msg:
+      - "Coolify installed successfully"
+      - "Access at: http://{{ ansible_host }}:{{ coolify_app_port }}"
+  tags: coolify, installation

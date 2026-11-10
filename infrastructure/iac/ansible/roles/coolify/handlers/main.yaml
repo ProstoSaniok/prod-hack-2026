@@ -1,0 +1,70 @@
+---
+- name: Restart coolify services
+  become: true
+  community.docker.docker_compose_v2:
+    project_src: "{{ coolify_base_dir }}/source"
+    files: "{{ coolify_compose_files }}"
+    state: present
+    recreate: always
+    pull: always
+    wait: true
+    wait_timeout: "{{ coolify_compose_wait_timeout }}"
+
+- name: Restart coolify app
+  become: true
+  community.docker.docker_compose_v2:
+    project_src: "{{ coolify_base_dir }}/source"
+    files: "{{ coolify_compose_files }}"
+    services:
+      - coolify
+    state: present
+    recreate: always
+    wait: true
+    wait_timeout: "{{ coolify_compose_wait_timeout }}"
+
+- name: Restart coolify postgres
+  become: true
+  community.docker.docker_compose_v2:
+    project_src: "{{ coolify_base_dir }}/source"
+    files: "{{ coolify_compose_files }}"
+    services:
+      - postgres
+    state: present
+    recreate: always
+    wait: true
+    wait_timeout: "{{ coolify_compose_wait_timeout }}"
+
+- name: Restart coolify redis
+  become: true
+  community.docker.docker_compose_v2:
+    project_src: "{{ coolify_base_dir }}/source"
+    files: "{{ coolify_compose_files }}"
+    services:
+      - redis
+    state: present
+    recreate: always
+    wait: true
+    wait_timeout: "{{ coolify_compose_wait_timeout }}"
+
+- name: Restart coolify soketi
+  become: true
+  community.docker.docker_compose_v2:
+    project_src: "{{ coolify_base_dir }}/source"
+    files: "{{ coolify_compose_files }}"
+    services:
+      - soketi
+    state: present
+    recreate: always
+    wait: true
+    wait_timeout: "{{ coolify_compose_wait_timeout }}"
+
+- name: Wait for coolify health
+  ansible.builtin.uri:
+    url: "http://localhost:{{ coolify_app_port }}"
+    method: GET
+    status_code: 200
+    timeout: 30
+  register: _coolify_handler_health
+  until: _coolify_handler_health.status == 200
+  retries: "{{ coolify_health_retries }}"
+  delay: "{{ coolify_health_delay }}"

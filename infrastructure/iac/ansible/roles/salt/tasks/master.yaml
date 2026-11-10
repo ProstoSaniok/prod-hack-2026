@@ -1,0 +1,20 @@
+---
+- name: Install Salt Master
+  ansible.builtin.package:
+    name: salt-master
+    state: present
+
+- name: Configure Salt Master
+  ansible.builtin.template:
+    src: master.j2
+    dest: /etc/salt/master
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Restart salt-master
+
+- name: Ensure salt-master service is enabled
+  ansible.builtin.service:
+    name: salt-master
+    state: started
+    enabled: true

@@ -1,0 +1,100 @@
+# Managed by Ansible - do not modify manually
+# Security hardened SSH configuration
+
+Include /etc/ssh/sshd_config.d/*.conf
+
+# Basic settings
+Port {{ security_ssh_port }}
+AddressFamily any
+ListenAddress 0.0.0.0
+ListenAddress ::
+Protocol 2
+
+# Host keys (modern algorithms first)
+HostKey /etc/ssh/ssh_host_ed25519_key
+HostKey /etc/ssh/ssh_host_rsa_key
+HostKey /etc/ssh/ssh_host_ecdsa_key
+
+# Cryptography settings (modern ciphers)
+KexAlgorithms curve25519-sha256,curve25519-sha256@libssh.org,diffie-hellman-group16-sha512,diffie-hellman-group18-sha512
+Ciphers chacha20-poly1305@openssh.com,aes256-gcm@openssh.com,aes128-gcm@openssh.com,aes256-ctr,aes192-ctr,aes128-ctr
+MACs hmac-sha2-512-etm@openssh.com,hmac-sha2-256-etm@openssh.com,umac-128-etm@openssh.com
+
+# Authentication security
+PermitRootLogin {{ ssh_config.permit_root_login }}
+MaxAuthTries {{ ssh_config.max_auth_tries }}
+MaxSessions {{ ssh_config.max_sessions }}
+ClientAliveInterval {{ ssh_config.client_alive_interval }}
+ClientAliveCountMax {{ ssh_config.client_alive_count_max }}
+LoginGraceTime 60
+
+# General security settings
+UsePAM {{ ssh_config.use_pam }}
+X11Forwarding {{ ssh_config.x11_forwarding }}
+PrintMotd no
+Compression no
+UseDNS no
+IgnoreRhosts yes
+StrictModes yes
+PermitEmptyPasswords no
+TCPKeepAlive yes
+KbdInteractiveAuthentication no
+PrintLastLog yes
+
+# Authorization settings
+AuthorizedKeysFile .ssh/authorized_keys .ssh/authorized_keys2
+
+# Logging
+LogLevel INFO
+SyslogFacility AUTH
+
+# User restrictions
+{% if ssh_config.allow_users is defined and ssh_config.allow_users %}
+AllowUsers {{ ssh_config.allow_users }}
+{% endif %}
+{% if ssh_config.allow_groups is defined and ssh_config.allow_groups %}
+AllowGroups {{ ssh_config.allow_groups }}
+{% endif %}
+
+# Key-based auth enforcement
+PasswordAuthentication {{ ssh_config.password_authentication }}
+PermitEmptyPasswords no
+PubkeyAuthentication yes
+AuthenticationMethods publickey
+ChallengeResponseAuthentication {{ ssh_config.challenge_response_authentication }}
+
+# Rekey limits
+RekeyLimit 512M 1h
+
+# Allow client to pass locale environment variables
+AcceptEnv LANG LC_*
+
+Subsystem sftp /usr/lib/openssh/sftp-server
+
+# Authorized key and principal controls
+AuthorizedPrincipalsFile none
+AuthorizedKeysCommand none
+AuthorizedKeysCommandUser nobody
+
+# Disable forwarding and tunnels unless explicitly needed
+AllowAgentForwarding no
+AllowTcpForwarding no
+GatewayPorts no
+PermitTunnel no
+
+# Disable user-controlled environments and TTY manipulations
+PermitUserEnvironment no
+PermitTTY yes
+X11UseLocalhost yes
+X11DisplayOffset 10
+
+# Limit connection attempts
+MaxStartups 2:30:100
+
+# Misc hardening
+IgnoreUserKnownHosts yes
+VersionAddendum none
+ChrootDirectory none
+
+Match Address 10.0.0.0/8,192.168.0.0/16,172.16.0.0/12
+        PermitRootLogin yes

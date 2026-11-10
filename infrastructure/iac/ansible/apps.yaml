@@ -1,0 +1,31 @@
+---
+- name: Application Deployment
+  hosts: servers
+  gather_facts: true
+  become: true
+  serial: 1
+
+  roles:
+    - role: borgbase.ansible_role_borgbackup
+      when: applications.borgbackup.enabled | bool
+      tags: borgbackup, apps
+
+    - role: artis3n.tailscale.machine
+      when: applications.tailscale.enabled | bool
+      tags: tailscale, apps
+
+    - role: salt
+      when: applications.salt.enabled | bool
+      tags: salt, apps
+
+    - role: dokploy
+      when: (applications.dokploy.enabled and containers.docker.enabled) | bool
+      vars:
+        dokploy_state: "{{ applications.dokploy.state | default('present') }}"
+      tags: dokploy, apps
+
+    - role: coolify
+      when: (applications.coolify.enabled and containers.docker.enabled) | bool
+      vars:
+        coolify_state: "{{ applications.coolify.state | default('present') }}"
+      tags: coolify, apps

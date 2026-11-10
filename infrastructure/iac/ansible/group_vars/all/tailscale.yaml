@@ -1,0 +1,16 @@
+---
+state: "{{ applications.tailscale.state | default('latest') }}"
+
+tailscale_authkey: "{{ lookup('env', 'TAILSCALE_KEY') }}"
+tailscale_tags: >-
+  {{
+    ['vm'] +
+    ([hostname.split('-')[-1]] if '-' in hostname else [])
+  }}
+tailscale_args: "--accept-dns=true --accept-routes=true --netfilter-mode on --shields-up=false --ssh=true --stateful-filtering=false"
+
+tailscale_oauth_ephemeral: false
+tailscale_oauth_preauthorized: true
+insecurely_log_authkey: false
+release_stability: stable
+tailscale_up_timeout: 120

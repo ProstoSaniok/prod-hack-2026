@@ -1,0 +1,309 @@
+#!/usr/sbin/nft -f
+#
+# Managed by Ansible — manual changes will be overwritten on next deployment
+#
+
+{% set default_policy = security_firewall_default_policy | default('drop') %}
+{% set allowed_ports = security_firewall_allowed_ports | default([]) %}
+{% set trusted_interfaces = security_nftables_trusted_interfaces | default(['lo']) %}
+{% set rate_limit_enabled = security_nftables_rate_limit_enabled | default(true) %}
+{% set icmp_rate = security_nftables_icmp_rate | default('10/second') %}
+{% set ct_rate = security_nftables_new_conn_rate | default('100/second') %}
+{% set ct_rate_burst = security_nftables_new_conn_burst | default(50) %}
+{% set log_dropped = security_nftables_log_dropped | default(false) %}
+{% set log_prefix = security_nftables_log_prefix | default('nftables-dropped: ') %}
+{% set custom_input_rules = security_nftables_custom_input_rules | default([]) %}
+{% set custom_forward_rules = security_nftables_custom_forward_rules | default([]) %}
+{% set custom_output_rules = security_nftables_custom_output_rules | default([]) %}
+{% set dnat_rules = security_nftables_dnat_rules | default([]) %}
+{% set snat_rules = security_nftables_snat_rules | default([]) %}
+{% set masquerade_interfaces = security_nftables_masquerade_interfaces | default([]) %}
+{% set custom_raw = security_nftables_custom_config | default('') %}
+{% set forward_policy = security_nftables_forward_policy | default('accept') %}
+{% set output_policy = security_nftables_output_policy | default('accept') %}
+{% set blocked_ips = security_nftables_blocked_ips | default([]) %}
+{% set trusted_ips = security_nftables_trusted_ips | default([]) %}
+{% set allowed_port_ranges = security_nftables_allowed_port_ranges | default([]) %}
+
+{% set blocked_v4 = blocked_ips | select('match', '.*\\..*') | list %}
+{% set blocked_v6 = blocked_ips | reject('match', '.*\\..*') | list %}
+{% set trusted_v4 = trusted_ips | select('match', '.*\\..*') | list %}
+{% set trusted_v6 = trusted_ips | reject('match', '.*\\..*') | list %}
+
+{% set has_nat = (dnat_rules | length > 0) or (snat_rules | length > 0) or (masquerade_interfaces | length > 0) %}
+
+table inet ansible_filter
+delete table inet ansible_filter
+
+# Always attempt to delete the NAT table so stale rules don't survive
+# when all NAT variables are removed from host_vars.
+table ip ansible_nat
+delete table ip ansible_nat
+
+table inet ansible_filter {
+
+{% if blocked_v4 | length > 0 %}
+    set blocked_v4 {
+        type ipv4_addr
+        flags interval
+        elements = {
+{% for ip in blocked_v4 %}
+            {{ ip }}{{ ',' if not loop.last else '' }}
+{% endfor %}
+        }
+    }
+
+{% endif %}
+{% if blocked_v6 | length > 0 %}
+    set blocked_v6 {
+        type ipv6_addr
+        flags interval
+        elements = {
+{% for ip in blocked_v6 %}
+            {{ ip }}{{ ',' if not loop.last else '' }}
+{% endfor %}
+        }
+    }
+
+{% endif %}
+{% if trusted_v4 | length > 0 %}
+    set trusted_v4 {
+        type ipv4_addr
+        flags interval
+        elements = {
+{% for ip in trusted_v4 %}
+            {{ ip }}{{ ',' if not loop.last else '' }}
+{% endfor %}
+        }
+    }
+
+{% endif %}
+{% if trusted_v6 | length > 0 %}
+    set trusted_v6 {
+        type ipv6_addr
+        flags interval
+        elements = {
+{% for ip in trusted_v6 %}
+            {{ ip }}{{ ',' if not loop.last else '' }}
+{% endfor %}
+        }
+    }
+
+{% endif %}
+    chain input {
+        type filter hook input priority filter; policy {{ default_policy }};
+
+        # Conntrack: allow established, drop invalid
+        ct state established,related accept
+        ct state invalid drop
+
+        # Blocked IPs — earliest possible drop
+{% if blocked_v4 | length > 0 %}
+        ip saddr @blocked_v4 counter drop
+{% endif %}
+{% if blocked_v6 | length > 0 %}
+        ip6 saddr @blocked_v6 counter drop
+{% endif %}
+
+        # Trusted interfaces (loopback, wireguard, etc.)
+{% for iface in trusted_interfaces %}
+        iifname "{{ iface }}" accept
+{% endfor %}
+
+        # Trusted IPs — bypass all further filtering
+{% if trusted_v4 | length > 0 %}
+        ip saddr @trusted_v4 accept
+{% endif %}
+{% if trusted_v6 | length > 0 %}
+        ip6 saddr @trusted_v6 accept
+{% endif %}
+
+        # ICMP / ICMPv6 — essential types{% if rate_limit_enabled %} (rate-limited){% endif %}
+
+{% if rate_limit_enabled %}
+        ip protocol icmp icmp type { echo-request, echo-reply, destination-unreachable, time-exceeded } limit rate {{ icmp_rate }} accept
+        ip6 nexthdr icmpv6 icmpv6 type { echo-request, echo-reply, destination-unreachable, packet-too-big, time-exceeded, parameter-problem, nd-neighbor-solicit, nd-neighbor-advert, nd-router-solicit, nd-router-advert } limit rate {{ icmp_rate }} accept
+{% else %}
+        ip protocol icmp icmp type { echo-request, echo-reply, destination-unreachable, time-exceeded } accept
+        ip6 nexthdr icmpv6 icmpv6 type { echo-request, echo-reply, destination-unreachable, packet-too-big, time-exceeded, parameter-problem, nd-neighbor-solicit, nd-neighbor-advert, nd-router-solicit, nd-router-advert } accept
+{% endif %}
+
+        # Allowed ports
+{% if allowed_ports | length > 0 %}
+{% for p in allowed_ports %}
+{% set parts = p.split('/') %}
+{% set port = parts[0] %}
+{% set proto = parts[1] if parts | length > 1 else 'tcp' %}
+{% if ':' in port %}
+{% set range_parts = port.split(':') %}
+        {{ proto }} dport {{ range_parts[0] }}-{{ range_parts[1] }} accept
+{% else %}
+        {{ proto }} dport {{ port }} accept
+{% endif %}
+{% endfor %}
+{% endif %}
+
+{% if allowed_port_ranges | length > 0 %}
+        # Allowed port ranges
+{% for rule in allowed_port_ranges %}
+{% set proto = rule.proto | default('tcp') %}
+{% set comment = ' comment "' + rule.comment + '"' if rule.comment is defined else '' %}
+{% if rule.source is defined %}
+        ip saddr {{ rule.source }} {{ proto }} dport {{ rule.start }}-{{ rule.end }} accept{{ comment }}
+{% else %}
+        {{ proto }} dport {{ rule.start }}-{{ rule.end }} accept{{ comment }}
+{% endif %}
+{% endfor %}
+{% endif %}
+
+{% if rate_limit_enabled %}
+        # SYN flood protection: drop new connections that exceed the rate limit.
+        # Placed after port-allow rules so only accepted ports are reachable,
+        # and excess SYN packets to those ports are dropped.
+        tcp flags & (fin | syn | rst | ack) == syn ct state new limit rate over {{ ct_rate }} burst {{ ct_rate_burst }} packets counter drop
+{% endif %}
+
+{% if custom_input_rules | length > 0 %}
+        # Custom input rules
+{% for rule in custom_input_rules %}
+        {{ rule }}
+{% endfor %}
+{% endif %}
+
+{% if log_dropped %}
+        # Log before final reject/drop
+        log prefix "{{ log_prefix }}" flags all counter
+{% endif %}
+{% if default_policy == 'drop' %}
+        # Polite rejects before the implicit policy drop
+        tcp dport 1-65535 counter reject with tcp reset
+        counter reject with icmpx type port-unreachable
+{% endif %}
+    }
+
+    chain forward {
+        type filter hook forward priority filter; policy {{ forward_policy }};
+
+        # Conntrack
+        ct state established,related accept
+        ct state invalid drop
+
+{% if blocked_v4 | length > 0 %}
+        ip saddr @blocked_v4 counter drop
+{% endif %}
+{% if blocked_v6 | length > 0 %}
+        ip6 saddr @blocked_v6 counter drop
+{% endif %}
+
+{% if dnat_rules | length > 0 %}
+        # Accept forwarded traffic for DNAT destinations (needed if forward policy != accept)
+{% for rule in dnat_rules %}
+{% if rule.redirect is not defined %}
+{% set proto = rule.proto | default('tcp') %}
+{% set comment = ' comment "DNAT fwd: ' + rule.comment + '"' if rule.comment is defined else '' %}
+{% set dest_parts = rule.dest.split(':') %}
+{% set dest_ip = dest_parts[0] %}
+{% set dest_port = dest_parts[1] if dest_parts | length > 1 else rule.port | string %}
+        ip daddr {{ dest_ip }} {{ proto }} dport {{ dest_port }} accept{{ comment }}
+{% endif %}
+{% endfor %}
+{% endif %}
+
+{% if custom_forward_rules | length > 0 %}
+        # Custom forward rules
+{% for rule in custom_forward_rules %}
+        {{ rule }}
+{% endfor %}
+{% endif %}
+    }
+
+    chain output {
+        type filter hook output priority filter; policy {{ output_policy }};
+
+        ct state established,related accept
+
+{% if custom_output_rules | length > 0 %}
+        # Custom output rules
+{% for rule in custom_output_rules %}
+        {{ rule }}
+{% endfor %}
+{% endif %}
+    }
+}
+
+{% if has_nat %}
+table ip ansible_nat {
+
+{% if dnat_rules | length > 0 %}
+    chain prerouting {
+        type nat hook prerouting priority dstnat; policy accept;
+
+{% for rule in dnat_rules %}
+{% set proto = rule.proto | default('tcp') %}
+{% set comment = ' comment "' + rule.comment + '"' if rule.comment is defined else '' %}
+{% set dnat_match = [] %}
+{% if rule.iif is defined %}
+{% set _ = dnat_match.append('iifname "' + rule.iif + '"') %}
+{% endif %}
+{% if rule.source is defined %}
+{% set _ = dnat_match.append('ip saddr ' + rule.source) %}
+{% endif %}
+{% if rule.destination is defined %}
+{% set _ = dnat_match.append('ip daddr ' + rule.destination) %}
+{% endif %}
+{% set _ = dnat_match.append(proto + ' dport ' + rule.port | string) %}
+{% if rule.redirect is defined %}
+        {{ dnat_match | join(' ') }} redirect to :{{ rule.redirect }}{{ comment }}
+{% else %}
+        {{ dnat_match | join(' ') }} dnat to {{ rule.dest }}{{ comment }}
+{% endif %}
+{% endfor %}
+    }
+
+{% endif %}
+{% if snat_rules | length > 0 or masquerade_interfaces | length > 0 %}
+    chain postrouting {
+        type nat hook postrouting priority srcnat; policy accept;
+
+{% for rule in snat_rules %}
+{% set comment = ' comment "' + rule.comment + '"' if rule.comment is defined else '' %}
+{% set proto = rule.proto | default('') %}
+{% set match_parts = [] %}
+{% if rule.iif is defined %}
+{% set _ = match_parts.append('iifname "' + rule.iif + '"') %}
+{% endif %}
+{% if rule.oif is defined %}
+{% set _ = match_parts.append('oifname "' + rule.oif + '"') %}
+{% endif %}
+{% if rule.source is defined %}
+{% set _ = match_parts.append('ip saddr ' + rule.source) %}
+{% endif %}
+{% if rule.dest is defined %}
+{% set _ = match_parts.append('ip daddr ' + rule.dest) %}
+{% endif %}
+{% if proto %}
+{% if rule.dport is defined %}
+{% set _ = match_parts.append(proto + ' dport ' + rule.dport | string) %}
+{% endif %}
+{% if rule.sport is defined %}
+{% set _ = match_parts.append(proto + ' sport ' + rule.sport | string) %}
+{% endif %}
+{% endif %}
+{% if rule.masquerade | default(false) %}
+        {{ match_parts | join(' ') }} masquerade{{ comment }}
+{% else %}
+        {{ match_parts | join(' ') }} snat to {{ rule.to }}{{ comment }}
+{% endif %}
+{% endfor %}
+{% for iface in masquerade_interfaces %}
+        oifname "{{ iface }}" masquerade
+{% endfor %}
+    }
+
+{% endif %}
+}
+{% endif %}
+
+{% if custom_raw | trim | length > 0 %}
+{{ custom_raw | trim }}
+{% endif %}

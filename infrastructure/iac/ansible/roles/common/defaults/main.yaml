@@ -1,0 +1,10 @@
+---
+common_journal_retention_days: 21
+common_journal_max_disk_limit: "5%"
+
+gpu_unbind_devices: []
+# Example:
+# gpu_unbind_devices:
+#   - pci_id: "0000:06:00.0"
+#     driver: "amdgpu"
+#     label: "amd_igpu_cezanne"

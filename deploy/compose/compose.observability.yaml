@@ -1,0 +1,144 @@
+services:
+  postgres-exporter:
+    image: ${POSTGRES_EXPORTER_IMAGE:-quay.io/prometheuscommunity/postgres-exporter:v0.20.1}
+    depends_on:
+      postgresql:
+        restart: false
+        condition: service_healthy
+        required: true
+    env_file:
+      - path: ./infrastructure/configs/postgres-exporter/.env.template
+        required: true
+      - path: ./infrastructure/configs/postgres-exporter/.env
+        required: false
+    networks:
+      - default
+    restart: unless-stopped
+    shm_size: 4mb
+
+  redis-exporter:
+    image: ${REDIS_EXPORTER_IMAGE:-docker.io/oliver006/redis_exporter:v1.94.0}
+    depends_on:
+      valkey:
+        restart: false
+        condition: service_healthy
+        required: true
+    env_file:
+      - path: ./infrastructure/configs/redis-exporter/.env.template
+        required: true
+      - path: ./infrastructure/configs/redis-exporter/.env
+        required: false
+    networks:
+      - default
+    restart: unless-stopped
+    shm_size: 4mb
+
+  victoriametrics:
+    image: ${VICTORIAMETRICS_IMAGE:-docker.io/victoriametrics/victoria-metrics:v1.154.0}
+    command:
+      - -storageDataPath=/victoria-metrics-data
+      - -retentionPeriod=${VICTORIAMETRICS_RETENTION:-7d}
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:8428/health"]
+      interval: 30s
+      timeout: 5s
+      start_period: 5s
+      start_interval: 2s
+      retries: 5
+    ports:
+      - name: metrics-query
+        target: 8428
+        published: ${VICTORIAMETRICS_PORT:-18428}
+        host_ip: 127.0.0.1
+        protocol: tcp
+        app_protocol: http
+    networks:
+      - default
+    restart: unless-stopped
+    shm_size: 4mb
+    volumes:
+      - type: volume
+        source: victoriametrics_data
+        target: /victoria-metrics-data
+
+  vmagent:
+    image: ${VMAGENT_IMAGE:-docker.io/victoriametrics/vmagent:v1.154.0}
+    command:
+      - -promscrape.config=/etc/vmagent/scrape.yaml
+      - -remoteWrite.url=http://victoriametrics:8428/api/v1/write
+      - -remoteWrite.tmpDataPath=/vmagent-data
+      - -remoteWrite.maxDiskUsagePerURL=1GB
+    configs:
+      - source: vmagent_scrape_config
+        target: /etc/vmagent/scrape.yaml
+    depends_on:
+      victoriametrics:
+        restart: false
+        condition: service_healthy
+        required: true
+      postgres-exporter:
+        restart: false
+        condition: service_started
+        required: true
+      redis-exporter:
+        restart: false
+        condition: service_started
+        required: true
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:8429/health"]
+      interval: 30s
+      timeout: 5s
+      start_period: 5s
+      start_interval: 2s
+      retries: 5
+    ports:
+      - name: scrape-status
+        target: 8429
+        published: ${VMAGENT_PORT:-18429}
+        host_ip: 127.0.0.1
+        protocol: tcp
+        app_protocol: http
+    networks:
+      - default
+    restart: unless-stopped
+    shm_size: 4mb
+    volumes:
+      - type: volume
+        source: vmagent_data
+        target: /vmagent-data
+
+  otel-collector:
+    image: ${OTEL_COLLECTOR_IMAGE:-docker.io/otel/opentelemetry-collector-contrib:0.163.1}
+    profiles:
+      - sage
+    command:
+      - --config=/etc/otelcol/config.yaml
+    configs:
+      - source: otel_collector_config
+        target: /etc/otelcol/config.yaml
+    env_file:
+      - path: ./infrastructure/configs/otel-collector/.env.template
+        required: true
+      - path: ./infrastructure/configs/otel-collector/.env
+        required: false
+    depends_on:
+      victoriametrics:
+        restart: false
+        condition: service_healthy
+        required: true
+    extra_hosts:
+      - host.docker.internal:host-gateway
+    networks:
+      - default
+    restart: unless-stopped
+    shm_size: 4mb
+
+volumes:
+  victoriametrics_data:
+  vmagent_data:
+
+configs:
+  vmagent_scrape_config:
+    file: ./infrastructure/configs/vmagent/scrape.yaml
+  otel_collector_config:
+    file: ./infrastructure/configs/otel-collector/config.yaml

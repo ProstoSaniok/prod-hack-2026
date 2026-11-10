@@ -1,0 +1,127 @@
+# Coolify custom Service. Its resource-local network is the Git trust boundary.
+# No predefined-network attachment. URLs target gitea:3000 only.
+services:
+  git-postgresql:
+    image: postgres:18-alpine@sha256:77f585114c32fbca283dc835b0596f4e52b51b4c6662d7810b2f4084f60a1873
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_DB: postgres
+      POSTGRES_PASSWORD: ${GIT_DB_ADMIN_PASSWORD:?Generate an independent hex password}
+      # Nonempty masks survive Coolify's database override of empty strings.
+      GIT_DB_ADMIN_PASSWORD: unused
+      GIT_DB_PASSWORD: unused
+      GIT_ADMIN_PASSWORD: unused
+    volumes:
+      - type: volume
+        source: git_postgresql
+        target: /var/lib/postgresql
+    healthcheck:
+      test: [CMD, pg_isready, -h, 127.0.0.1, -U, postgres, -d, postgres]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+    labels: [traefik.enable=false]
+    restart: unless-stopped
+    mem_limit: 512m
+    cpus: 1.0
+  git-database-bootstrap:
+    image: postgres:18-alpine@sha256:77f585114c32fbca283dc835b0596f4e52b51b4c6662d7810b2f4084f60a1873
+    command: [sh, /bootstrap.sh]
+    environment:
+      PGHOST: git-postgresql
+      PGUSER: postgres
+      PGDATABASE: postgres
+      PGPASSWORD: ${GIT_DB_ADMIN_PASSWORD:?Generate an independent hex password}
+      GIT_DB_PASSWORD: ${GIT_DB_PASSWORD:?Generate an independent hex password}
+      GIT_DB_ADMIN_PASSWORD: unused
+      GIT_ADMIN_PASSWORD: unused
+      PGOPTIONS: -c log_statement=none -c log_min_error_statement=panic -c log_min_duration_statement=-1 -c log_duration=off -c log_min_duration_sample=-1
+    configs:
+      - source: git_database_bootstrap
+        target: /bootstrap.sh
+    depends_on:
+      git-postgresql:
+        condition: service_healthy
+        required: true
+        restart: false
+    labels: [traefik.enable=false]
+    restart: "no"
+    mem_limit: 128m
+    cpus: 0.5
+  gitea:
+    image: docker.gitea.com/gitea@sha256:f505a0d3a41323b786e05942fc7a4075e07ae7c169fd9485649aa55ee543a21a
+    environment:
+      GIT_DB_ADMIN_PASSWORD: unused
+      GIT_DB_PASSWORD: unused
+      GIT_ADMIN_PASSWORD: ${GIT_ADMIN_PASSWORD:-}
+      GITEA__database__DB_TYPE: postgres
+      GITEA__database__HOST: git-postgresql:5432
+      GITEA__database__NAME: prodguild_git
+      GITEA__database__USER: prodguild_git
+      GITEA__database__PASSWD: ${GIT_DB_PASSWORD:?Generate an independent hex password}
+      GITEA__database__SSL_MODE: disable
+      GITEA__security__INSTALL_LOCK: "true"
+      GITEA__security__DISABLE_GIT_HOOKS: "true"
+      GITEA__service__DISABLE_REGISTRATION: "true"
+      GITEA__service__REQUIRE_SIGNIN_VIEW: "true"
+      GITEA__repository__FORCE_PRIVATE: "true"
+      GITEA__repository__DEFAULT_PRIVATE: private
+      GITEA__repository__ENABLE_PUSH_CREATE_USER: "false"
+      GITEA__repository__ENABLE_PUSH_CREATE_ORG: "false"
+      GITEA__repository__DISABLED_REPO_UNITS: repo.wiki,repo.ext_wiki,repo.ext_issues,repo.projects,repo.packages,repo.actions
+      GITEA__actions__ENABLED: "false"
+      GITEA__packages__ENABLED: "false"
+      GITEA__mailer__ENABLED: "false"
+      GITEA__openid__ENABLE_OPENID_SIGNIN: "false"
+      GITEA__openid__ENABLE_OPENID_SIGNUP: "false"
+      GITEA__server__ROOT_URL: ${GIT_ROOT_URL:?Set the owned localhost preview URL}
+      GITEA__server__OFFLINE_MODE: "true"
+      GITEA__server__DISABLE_SSH: "true"
+      GITEA__server__LFS_START_SERVER: "false"
+      GITEA__server__ENABLE_PPROF: "false"
+      GITEA__metrics__ENABLED: "false"
+      GITEA__log__LEVEL: Error
+    volumes:
+      - type: volume
+        source: git_data
+        target: /data
+    # Native Git uses authenticated HTTP. SSH and host port publication are disabled.
+    depends_on:
+      git-database-bootstrap:
+        condition: service_completed_successfully
+        required: true
+        restart: false
+    healthcheck:
+      test: [CMD, wget, -qO-, "http://127.0.0.1:3000/api/healthz"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=${GIT_PROXY_NETWORK:?Set this owned Service UUID after creation}
+      - traefik.http.routers.${GIT_ROUTER_NAME:?Set a unique prodguild router}.rule=Host(`${GIT_HOST:?Set an owned localhost hostname}`) && !Path(`/api/healthz`) && !PathPrefix(`/metrics`) && !PathPrefix(`/admin`) && !PathPrefix(`/api/v1/admin`)
+      - traefik.http.routers.${GIT_ROUTER_NAME}.entrypoints=http
+      - traefik.http.routers.${GIT_ROUTER_NAME}.service=${GIT_ROUTER_NAME}
+      - traefik.http.services.${GIT_ROUTER_NAME}.loadbalancer.server.port=3000
+    restart: unless-stopped
+    mem_limit: 1g
+    cpus: 1.0
+volumes:
+  git_postgresql:
+  git_data:
+configs:
+  git_database_bootstrap:
+    content: |
+      #!/bin/sh
+      set -eu
+      psql --no-psqlrc --set=ON_ERROR_STOP=1 --set=VERBOSITY=terse <<'SQL'
+      \getenv git_password GIT_DB_PASSWORD
+      SELECT format('CREATE ROLE prodguild_git LOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE PASSWORD %L', :'git_password')
+      WHERE NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'prodguild_git')
+      \gexec
+      SELECT 'CREATE DATABASE prodguild_git OWNER prodguild_git'
+      WHERE NOT EXISTS (SELECT 1 FROM pg_database WHERE datname = 'prodguild_git')
+      \gexec
+      SQL
