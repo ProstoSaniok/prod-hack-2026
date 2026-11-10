@@ -1,0 +1,53 @@
+# Managed by Ansible — manual changes will be overwritten on next deployment
+services:
+  coolify:
+    container_name: coolify
+    mem_limit: 512m
+    memswap_limit: 512m
+    restart: always
+    working_dir: /var/www/html
+    extra_hosts:
+      - host.docker.internal:host-gateway
+    networks:
+      - coolify
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      # soketi:
+      #   condition: service_healthy
+
+  postgres:
+    image: postgres:15-alpine
+    container_name: coolify-db
+    mem_limit: 64m
+    memswap_limit: 128m
+    restart: always
+    networks:
+      - coolify
+
+  redis:
+    image: redis:8-alpine
+    container_name: coolify-redis
+    mem_limit: 32m
+    memswap_limit: 64m
+    restart: always
+    networks:
+      - coolify
+
+  # soketi:
+  #   container_name: coolify-realtime
+  #   mem_limit: 32m
+  #   memswap_limit: 64m
+  #   extra_hosts:
+  #     - host.docker.internal:host-gateway
+  #   restart: always
+  #   networks:
+  #     - coolify
+
+networks:
+  coolify:
+    name: coolify
+    driver: bridge
+    external: false

@@ -1,0 +1,36 @@
+---
+- name: Ensure APT keyrings directory exists
+  ansible.builtin.file:
+    path: /etc/apt/keyrings
+    state: directory
+    mode: "0755"
+
+- name: Download Salt public key
+  ansible.builtin.get_url:
+    url: https://packages.broadcom.com/artifactory/api/security/keypair/SaltProjectKey/public
+    dest: /tmp/salt-public.key
+    mode: "0644"
+
+- name: Convert Salt key to keyring
+  ansible.builtin.command:
+    cmd: >
+      gpg --dearmor
+      --output /etc/apt/keyrings/salt-archive-keyring.pgp
+      /tmp/salt-public.key
+  args:
+    creates: /etc/apt/keyrings/salt-archive-keyring.pgp
+
+- name: Remove temporary Salt public key
+  ansible.builtin.file:
+    path: /tmp/salt-public.key
+    state: absent
+
+- name: Install Salt repository
+  ansible.builtin.get_url:
+    url: https://github.com/saltstack/salt-install-guide/releases/latest/download/salt.sources
+    dest: /etc/apt/sources.list.d/salt.sources
+    mode: "0644"
+
+- name: Update apt cache
+  ansible.builtin.apt:
+    update_cache: true

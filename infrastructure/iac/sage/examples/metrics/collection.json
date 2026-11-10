@@ -1,0 +1,10 @@
+{
+  "groupName": "replace-with-authorized-group",
+  "systemName": "prodguild-backend",
+  "envName": "prodguild-stage",
+  "targetCollectionName": "prodguild-backend-stage",
+  "enableFullHostName": true,
+  "source": "Manual",
+  "scheme": "http",
+  "metricsPath": "/metrics"
+}

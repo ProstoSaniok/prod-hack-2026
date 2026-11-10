@@ -1,0 +1,276 @@
+---
+- name: Check if Docker is installed
+  ansible.builtin.command:
+    cmd: docker --version
+  changed_when: false
+  tags: dokploy, docker, installation
+
+- name: Ensure Docker service is started and enabled
+  ansible.builtin.systemd:
+    name: docker
+    state: started
+    enabled: true
+  tags: dokploy, docker, installation
+
+- name: Leave existing Docker Swarm if any
+  become: true
+  community.docker.docker_swarm:
+    state: absent
+  register: _dokploy_swarm_leave
+  failed_when:
+    - _dokploy_swarm_leave is failed
+    - "'not part of a swarm' not in (_dokploy_swarm_leave.msg | default('') | lower)"
+    - "'not a swarm manager' not in (_dokploy_swarm_leave.msg | default('') | lower)"
+  tags: dokploy, swarm, installation
+
+- name: Determine advertise address
+  tags: dokploy, network, installation
+  block:
+    - name: Get private IP address
+      ansible.builtin.set_fact:
+        dokploy_private_ip: "{{ ansible_default_ipv4.address }}"
+      when: dokploy_advertise_addr == ""
+
+    - name: Set advertise address
+      ansible.builtin.set_fact:
+        dokploy_effective_advertise_addr: "{{ dokploy_advertise_addr | default(dokploy_private_ip) }}"
+
+- name: Validate advertise address
+  ansible.builtin.assert:
+    that:
+      - dokploy_effective_advertise_addr is defined
+      - dokploy_effective_advertise_addr != ""
+    fail_msg: "Could not determine advertise address. Please set dokploy_advertise_addr variable."
+  tags: dokploy, network, installation
+
+- name: Initialize Docker Swarm
+  become: true
+  community.docker.docker_swarm:
+    state: present
+    advertise_addr: "{{ dokploy_effective_advertise_addr }}"
+    listen_addr: "{{ dokploy_effective_advertise_addr }}"
+  tags: dokploy, swarm, installation
+
+- name: Create dokploy overlay network
+  become: true
+  community.docker.docker_network:
+    name: "{{ dokploy_docker_network }}"
+    driver: overlay
+    attachable: true
+    state: present
+  tags: dokploy, network, installation
+
+- name: Create Dokploy configuration directory
+  ansible.builtin.file:
+    path: "{{ dokploy_config_dir }}"
+    state: directory
+    mode: "0755"
+  tags: dokploy, files, installation
+
+- name: Pull all service images (when update all services requested)
+  become: true
+  community.docker.docker_image:
+    name: "{{ item }}"
+    source: pull
+  loop:
+    - "{{ dokploy_postgres_image }}"
+    - "{{ dokploy_redis_image }}"
+    - "{{ dokploy_dokploy_image }}"
+    - "{{ dokploy_traefik_image }}"
+  when: dokploy_update_all_services | bool
+  tags: dokploy, images, installation
+
+- name: Pull only Dokploy image (when latest requested and not updating all)
+  become: true
+  community.docker.docker_image:
+    name: "{{ dokploy_dokploy_image }}"
+    source: pull
+  when:
+    - not (dokploy_update_all_services | bool)
+    - dokploy_state == 'latest'
+  tags: dokploy, images, installation
+
+- name: Deploy PostgreSQL service
+  become: true
+  community.docker.docker_swarm_service:
+    name: dokploy-postgres
+    image: "{{ dokploy_postgres_image }}"
+    placement:
+      constraints:
+        - "node.role=={{ dokploy_constraint_node_role }}"
+    networks:
+      - name: "{{ dokploy_docker_network }}"
+        aliases:
+          - dokploy-postgres
+    force_update: "{{ (dokploy_state == 'latest') | bool }}"
+    update_config:
+      parallelism: 1
+      order: stop-first
+      failure_action: rollback
+    restart_config:
+      condition: any
+      delay: 5s
+      max_attempts: 3
+      window: 120s
+    env:
+      POSTGRES_USER: "{{ dokploy_postgres_user }}"
+      POSTGRES_DB: "{{ dokploy_postgres_db }}"
+      POSTGRES_PASSWORD: "{{ dokploy_postgres_password }}"
+    mounts:
+      - type: volume
+        source: dokploy-postgres-database
+        target: /var/lib/postgresql/data
+    state: present
+  tags: dokploy, database, installation
+
+- name: Deploy Redis service
+  become: true
+  community.docker.docker_swarm_service:
+    name: dokploy-redis
+    image: "{{ dokploy_redis_image }}"
+    placement:
+      constraints:
+        - "node.role=={{ dokploy_constraint_node_role }}"
+    networks:
+      - name: "{{ dokploy_docker_network }}"
+        aliases:
+          - dokploy-redis
+    force_update: "{{ (dokploy_state == 'latest') | bool }}"
+    update_config:
+      parallelism: 1
+      order: stop-first
+      failure_action: rollback
+    restart_config:
+      condition: any
+      delay: 5s
+      max_attempts: 3
+      window: 120s
+    mounts:
+      - type: volume
+        source: redis-data-volume
+        target: /data
+    state: present
+  tags: dokploy, redis, installation
+
+- name: Deploy Dokploy main service
+  become: true
+  community.docker.docker_swarm_service:
+    name: dokploy
+    image: "{{ dokploy_dokploy_image }}"
+    replicas: 1
+    networks:
+      - name: "{{ dokploy_docker_network }}"
+        aliases:
+          - dokploy
+    force_update: "{{ (dokploy_state == 'latest') | bool }}"
+    update_config:
+      parallelism: 1
+      order: stop-first
+      failure_action: rollback
+    restart_config:
+      condition: any
+      delay: 5s
+      max_attempts: 3
+      window: 120s
+    mounts:
+      - type: bind
+        source: /var/run/docker.sock
+        target: /var/run/docker.sock
+      - type: bind
+        source: "{{ dokploy_config_dir }}"
+        target: /etc/dokploy
+      - type: volume
+        source: dokploy-docker-config
+        target: /root/.docker
+    publish:
+      - published_port: "{{ dokploy_http_port }}"
+        target_port: 3000
+        protocol: tcp
+        mode: host
+    placement:
+      constraints:
+        - "node.role=={{ dokploy_constraint_node_role }}"
+    env:
+      ADVERTISE_ADDR: "{{ dokploy_effective_advertise_addr }}"
+      DATABASE_URL: "postgres://{{ dokploy_postgres_user }}:{{ dokploy_postgres_password }}@dokploy-postgres:5432/{{ dokploy_postgres_db }}"
+    state: present
+  tags: dokploy, main, installation
+
+- name: Wait for Dokploy to start
+  ansible.builtin.pause:
+    seconds: 4
+  tags: dokploy, wait, installation
+
+- name: Create Traefik configuration directories
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    mode: "0755"
+  loop:
+    - "{{ dokploy_config_dir }}/traefik"
+    - "{{ dokploy_config_dir }}/traefik/dynamic"
+  tags: dokploy, traefik, installation
+
+- name: Deploy Traefik service
+  become: true
+  community.docker.docker_swarm_service:
+    name: dokploy-traefik
+    image: "{{ dokploy_traefik_image }}"
+    placement:
+      constraints:
+        - "node.role=={{ dokploy_constraint_node_role }}"
+    networks:
+      - name: "{{ dokploy_docker_network }}"
+        aliases:
+          - traefik
+    update_config:
+      parallelism: 1
+      order: start-first
+    restart_config:
+      condition: any
+    mounts:
+      - type: bind
+        source: "{{ dokploy_config_dir }}/traefik/traefik.yml"
+        target: /etc/traefik/traefik.yml
+      - type: bind
+        source: "{{ dokploy_config_dir }}/traefik/dynamic"
+        target: /etc/dokploy/traefik/dynamic
+      - type: bind
+        source: /var/run/docker.sock
+        target: /var/run/docker.sock
+    publish:
+      - published_port: 443
+        target_port: 443
+        protocol: tcp
+        mode: host
+      - published_port: 80
+        target_port: 80
+        protocol: tcp
+        mode: host
+      - published_port: 443
+        target_port: 443
+        protocol: udp
+        mode: host
+    state: present
+    force_update: "{{ (dokploy_state == 'latest') | bool }}"
+  tags: dokploy, traefik, installation
+
+- name: Wait for Dokploy HTTP to respond
+  ansible.builtin.uri:
+    url: "http://localhost:{{ dokploy_http_port }}"
+    method: GET
+    status_code: 200
+    timeout: 30
+  register: dokploy_health
+  until: dokploy_health.status == 200
+  retries: 10
+  delay: 10
+  tags: dokploy, health, installation
+
+- name: Show installation message
+  ansible.builtin.debug:
+    msg:
+      - "Dokploy installed successfully"
+      - "Using advertise address: {{ dokploy_effective_advertise_addr }}"
+      - "Access at: http://{{ ansible_host }}:{{ dokploy_http_port }}"
+  tags: dokploy, installation

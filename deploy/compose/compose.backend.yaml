@@ -1,0 +1,78 @@
+services:
+  backend:
+    image: ${BACKEND_IMAGE:-template_project-backend:latest}
+    build:
+      context: ./src/backend
+      dockerfile: Containerfile
+      target: app
+      tags:
+        - template_project-backend:latest
+      pull: true
+    depends_on:
+      backend-initdb:
+        restart: false
+        condition: service_completed_successfully
+        required: true
+      postgresql:
+        restart: false
+        condition: service_healthy
+        required: true
+    configs:
+      - source: backend_config
+        target: /app/config.toml
+    env_file:
+      - path: ./infrastructure/configs/backend/.env.template
+        required: true
+      - path: ./infrastructure/configs/backend/.env
+        required: false
+    extra_hosts:
+      - host.docker.internal:host-gateway
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import http.client; c = http.client.HTTPConnection('127.0.0.1', 8080, timeout=3); c.request('GET', '/healthcheck'); raise SystemExit(c.getresponse().status != 200)",
+        ]
+      interval: 30s
+      timeout: 5s
+      start_period: 5s
+      start_interval: 2s
+      retries: 5
+    networks:
+      - default
+    restart: unless-stopped
+    shm_size: 4mb
+
+  backend-initdb:
+    image: ${BACKEND_IMAGE:-template_project-backend:latest}
+    build:
+      context: ./src/backend
+      dockerfile: Containerfile
+      target: app
+      tags:
+        - template_project-backend:latest
+      pull: true
+    command: ["alembic", "upgrade", "head"]
+    depends_on:
+      postgresql:
+        restart: false
+        condition: service_healthy
+        required: true
+    configs:
+      - source: backend_config
+        target: /app/config.toml
+    env_file:
+      - path: ./infrastructure/configs/backend/.env.template
+        required: true
+      - path: ./infrastructure/configs/backend/.env
+        required: false
+    networks:
+      - default
+    restart: no
+    shm_size: 4mb
+
+configs:
+  backend_config:
+    file: ./infrastructure/configs/backend/config.toml

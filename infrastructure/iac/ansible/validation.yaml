@@ -1,0 +1,60 @@
+---
+- name: Post-deployment validation and health checks
+  hosts: servers
+  gather_facts: true
+  become: false
+
+  tasks:
+    - name: Verify SSH connectivity on custom port
+      tags: validation, networking
+      ansible.builtin.wait_for:
+        port: "{{ security_ssh_port | default(22) }}"
+        host: "{{ ansible_host | default(inventory_hostname) }}"
+        timeout: 60
+        delay: 5
+        state: started
+
+    - name: Check critical system services
+      ansible.builtin.systemd:
+        name: "{{ item }}"
+        state: started
+        enabled: true
+      loop:
+        - ssh
+        - fail2ban
+      tags: validation
+      failed_when: false
+
+    - name: Run comprehensive system health checks
+      tags: validation, health
+      block:
+        - name: Set root mount fact
+          ansible.builtin.set_fact:
+            root_mount: "{{ ansible_mounts | selectattr('mount', 'equalto', '/') | list | first }}"
+
+        - name: Check load average
+          ansible.builtin.command:
+            cmd: cat /proc/loadavg
+          register: load_avg
+          changed_when: false
+
+        - name: Set load average value
+          ansible.builtin.set_fact:
+            load_avg_1m: "{{ load_avg.stdout.split()[0] }}"
+
+        - name: Check Docker status
+          ansible.builtin.command:
+            cmd: docker info
+          register: docker_status
+          changed_when: false
+          failed_when: false
+
+        - name: Display comprehensive health status
+          tags: always, health
+          ansible.builtin.debug:
+            msg:
+              - "Health check results for {{ inventory_hostname }}:"
+              - "Disk usage: {{ ((root_mount.size_total - root_mount.size_available) / root_mount.size_total * 100) | round(2) }}%"
+              - "Memory usage: {{ ((ansible_memtotal_mb - ansible_memfree_mb) / ansible_memtotal_mb * 100) | round(2) }}%"
+              - "Load average (1m): {{ load_avg_1m }}"
+              - "Docker: {{ 'healthy' if docker_status.rc == 0 else 'unavailable' }}"

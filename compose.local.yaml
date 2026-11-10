@@ -1,0 +1,112 @@
+name: prodguild-local
+
+services:
+  postgresql:
+    image: postgres:18-alpine
+    environment:
+      POSTGRES_PASSWORD: postgres
+    volumes:
+      - pgdata:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+  backend-initdb:
+    image: prodguild-local-backend
+    build:
+      context: ./src/backend
+      dockerfile: Containerfile
+      target: app
+      args:
+        PY_IMAGE: python:3.12-slim
+    command: ["alembic", "upgrade", "head"]
+    environment:
+      CONFIGURATION_PATH: /app/config.toml
+      PYTHONPATH: /app
+      OTEL_SDK_DISABLED: "true"
+    volumes:
+      - ./src/backend/config.local.toml:/app/config.toml:ro
+      - ./src/backend/src:/app/src:ro
+    depends_on:
+      postgresql:
+        condition: service_healthy
+
+  backend:
+    image: prodguild-local-backend
+    command: ["web_api_cli", "/app/config.toml"]
+    environment:
+      PYTHONPATH: /app
+      LOCAL_DEMO_SEED: "true"
+      DEMO_ORGANIZER_PASSWORD: ${DEMO_ORGANIZER_PASSWORD:-Local-demo-2026!}
+      CONFIGURATION_PATH: /app/config.toml
+      OTEL_SDK_DISABLED: "true"
+    env_file:
+      - path: ./artifacts/local-gitea.env
+        required: false
+    volumes:
+      - ./src/backend/config.local.toml:/app/config.toml:ro
+      - ./src/backend/src:/app/src:ro
+    ports:
+      - "127.0.0.1:18080:8080"
+    depends_on:
+      backend-initdb:
+        condition: service_completed_successfully
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8080/healthcheck', timeout=3)",
+        ]
+      start_period: 90s
+      interval: 5s
+      timeout: 4s
+      retries: 10
+
+  gitea-postgresql:
+    image: postgres:18-alpine
+    environment:
+      POSTGRES_USER: gitea
+      POSTGRES_PASSWORD: local-gitea-2026
+      POSTGRES_DB: gitea
+    volumes:
+      - gitea-pgdata:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U gitea"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+  gitea:
+    image: gitea/gitea:28.1.0
+    environment:
+      GITEA__database__DB_TYPE: postgres
+      GITEA__database__HOST: gitea-postgresql:5432
+      GITEA__database__NAME: gitea
+      GITEA__database__USER: gitea
+      GITEA__database__PASSWD: local-gitea-2026
+      GITEA__security__INSTALL_LOCK: "true"
+      GITEA__service__DISABLE_REGISTRATION: "true"
+      GITEA__server__ROOT_URL: http://localhost:13000/
+      GITEA__server__LOCAL_ROOT_URL: http://127.0.0.1:3000/
+      GITEA__server__DISABLE_SSH: "true"
+    volumes:
+      - gitea-data:/data
+    ports:
+      - "127.0.0.1:13000:3000"
+    depends_on:
+      gitea-postgresql:
+        condition: service_healthy
+    healthcheck:
+      test:
+        ["CMD", "wget", "-q", "--spider", "http://127.0.0.1:3000/api/healthz"]
+      interval: 5s
+      timeout: 4s
+      retries: 30
+
+volumes:
+  pgdata:
+  gitea-pgdata:
+  gitea-data:

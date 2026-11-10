@@ -1,0 +1,27 @@
+services:
+  caddy:
+    image: ${CADDY_IMAGE:-docker.io/caddy:2-alpine}
+    configs:
+      - source: caddy_config
+        target: /etc/caddy/Caddyfile
+    ports:
+      - name: http
+        target: 80
+        published: 80
+        host_ip: 0.0.0.0
+        protocol: tcp
+        app_protocol: http
+      - name: https
+        target: 443
+        published: 443
+        host_ip: 0.0.0.0
+        protocol: tcp
+        app_protocol: http
+    networks:
+      - default
+    restart: unless-stopped
+    shm_size: 4mb
+
+configs:
+  caddy_config:
+    file: ./infrastructure/configs/caddy/Caddyfile

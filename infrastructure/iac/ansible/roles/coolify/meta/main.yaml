@@ -1,0 +1,18 @@
+---
+galaxy_info:
+  role_name: coolify
+  author: ITQ
+  description: Install, configure, and manage Coolify self-hosted PaaS
+  license: MIT
+  min_ansible_version: !!str 2.14
+  platforms:
+    - name: Ubuntu
+      versions:
+        - jammy
+        - noble
+    - name: Debian
+      versions:
+        - bookworm
+        - trixie
+
+dependencies: []

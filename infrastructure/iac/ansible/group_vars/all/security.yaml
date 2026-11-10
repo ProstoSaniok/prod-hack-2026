@@ -1,0 +1,28 @@
+---
+security_firewall_default_policy: drop
+security_firewall_allowed_ports:
+  - "{{ security_ssh_port }}/tcp"
+  - "80/tcp"
+  - "443/tcp"
+  - "443/udp"
+  - "53/udp"
+
+# Optional per-host nftables additions appended verbatim to the rendered config
+security_nftables_custom_config: ""
+
+security_ssh_port: 2424
+security_fail2ban_enabled: true
+security_fail2ban_custom_configuration_template: "jail.local.j2"
+security_autoupdate_enabled: true
+
+ssh_config:
+  permit_root_login: "no"
+  password_authentication: "no"
+  challenge_response_authentication: "no"
+  use_pam: "yes"
+  x11_forwarding: "no"
+  client_alive_interval: 300
+  client_alive_count_max: 2
+  max_auth_tries: 3
+  max_sessions: 10
+  allow_users: "root {{ admin_users | map(attribute='name') | join(' ') }}"

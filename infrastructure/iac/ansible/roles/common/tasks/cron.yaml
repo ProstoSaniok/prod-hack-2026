@@ -1,0 +1,20 @@
+---
+- name: Create cron job to prune journald logs with configurable limits
+  become: true
+  ansible.builtin.cron:
+    name: "Prune systemd journal logs ({{ common_journal_retention_days }} days, {{ common_journal_max_disk_limit }} disk)"
+    minute: "0"
+    hour: "2"
+    job: "/usr/bin/journalctl --vacuum-time={{ common_journal_retention_days }}d --vacuum-size={{ common_journal_max_disk_limit }} > /dev/null 2>&1"
+    user: root
+    state: present
+
+- name: Create cron job to prune atop with configurable limits
+  become: true
+  ansible.builtin.cron:
+    name: "Prune atop logs ({{ common_atop_retention_days }} days"
+    minute: "0"
+    hour: "2"
+    job: "/usr/bin/find /var/log/atop -name 'atop_*' -mtime +{{ common_atop_retention_days }} -delete > /dev/null 2>&1"
+    user: root
+    state: present

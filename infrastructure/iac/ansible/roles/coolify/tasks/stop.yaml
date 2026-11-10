@@ -1,0 +1,34 @@
+---
+- name: Stop Coolify services via Docker Compose
+  become: true
+  community.docker.docker_compose_v2:
+    project_src: "{{ coolify_base_dir }}/source"
+    files: "{{ coolify_compose_files }}"
+    state: stopped
+    remove_orphans: true
+  tags: coolify, docker, stop
+
+- name: Verify Coolify containers are stopped
+  community.docker.docker_container_info:
+    name: "{{ item }}"
+  loop: "{{ coolify_container_names }}"
+  register: _coolify_stopped_check
+  failed_when: false
+  tags: coolify, docker, stop
+
+- name: Confirm all containers are stopped
+  ansible.builtin.assert:
+    that:
+      - not (item.exists | default(false)) or
+        (item.container.State.Running | default(false)) == false
+    fail_msg: "Container {{ item.item }} is still running"
+    quiet: true
+  loop: "{{ _coolify_stopped_check.results }}"
+  loop_control:
+    label: "{{ item.item }}"
+  tags: coolify, docker, stop
+
+- name: Show stop confirmation
+  ansible.builtin.debug:
+    msg: "Coolify services have been stopped. Data and volumes are preserved."
+  tags: coolify, stop

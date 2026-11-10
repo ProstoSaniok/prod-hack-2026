@@ -1,0 +1,21 @@
+---
+dokploy_state: present # present | absent | latest
+dokploy_remove_data_on_absent: false
+dokploy_update_all_services: true
+dokploy_config_dir: /etc/dokploy
+dokploy_http_port: 3000
+dokploy_advertise_addr: ""
+
+dokploy_postgres_image: postgres:16-alpine
+dokploy_redis_image: redis:8-alpine
+dokploy_dokploy_image: dokploy/dokploy:latest
+dokploy_traefik_image: traefik:v3.6
+
+dokploy_postgres_user: dokploy
+dokploy_postgres_db: dokploy
+# Must be explicitly set per-host or in vault — left empty to fail loudly
+dokploy_postgres_password: ""
+
+dokploy_docker_network: dokploy-network
+
+dokploy_constraint_node_role: manager

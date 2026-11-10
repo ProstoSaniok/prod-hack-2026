@@ -1,0 +1,14 @@
+default:
+    @just --list
+
+validate:
+    python3 -m sage_iac validate
+
+test:
+    python3 -m unittest discover -s tests -v
+
+plan:
+    python3 -m sage_iac plan
+
+apply:
+    python3 -m sage_iac apply --yes

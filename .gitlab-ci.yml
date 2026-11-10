@@ -1,0 +1,205 @@
+include:
+  - project: pipelines/pipelines
+    ref: d66c2f97be403c2a453a6d8bcf99556b1a324580
+    file:
+      - /jobs/build.yaml
+
+stages:
+  - iac
+  - build
+  - test
+  - deploy
+
+default:
+  retry:
+    max: 2
+    when:
+      - runner_system_failure
+
+variables:
+  SPIRIT_REGISTRY: registry.spirit.t-education.com
+  SPIRIT_TENANT: hack-led-03
+  BASE_IMAGE_NAME: $SPIRIT_REGISTRY/$SPIRIT_TENANT/prodguild
+  UV_VERSION: "0.12.23"
+  UV_PYTHON_DOWNLOADS: never
+  UV_CACHE_DIR: $CI_PROJECT_DIR/.cache/uv
+  UV_PROJECT_ENVIRONMENT: $CI_PROJECT_DIR/src/backend/.venv
+  PIP_CACHE_DIR: $CI_PROJECT_DIR/.cache/pip
+  OTEL_SDK_DISABLED: "true"
+
+.build-template:
+  extends: .dp_build
+  stage: build
+  image:
+    name: registry.spirit.t-education.com/cicd-images/base-kaniko:latest
+    entrypoint: [""]
+  variables:
+    KANIKO_CACHE: "false"
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+    - if: $CI_COMMIT_TAG
+    - if: $CI_PIPELINE_SOURCE == 'merge_request_event'
+
+.uv-job: &uv-job
+  image: registry.spirit.t-education.com/cicd-images/python-3.12:latest
+  cache:
+    key:
+      files:
+        - src/backend/uv.lock
+      prefix: backend
+    paths:
+      - .cache/uv
+      - .cache/pip
+    policy: pull-push
+  before_script:
+    - python -m venv /tmp/ci-tools
+    - /tmp/ci-tools/bin/pip install "uv==$UV_VERSION"
+    - export PATH="/tmp/ci-tools/bin:$PATH"
+    - cd src/backend
+    - uv sync --locked --dev
+
+ansible-initvm:
+  stage: iac
+  image: registry.spirit.t-education.com/cicd-images/ansible-10:latest
+  variables:
+    ANSIBLE_HOST_KEY_CHECKING: "true"
+    ANSIBLE_SSH_ARGS: -o StrictHostKeyChecking=yes -o IdentitiesOnly=yes
+  before_script:
+    - install -d -m 0700 "$HOME/.ssh"
+    - printf '%s' "$VM1_PRIVATE_KEY_BASE64" | base64 -d > "$HOME/.ssh/id.pem"
+    - chmod 0600 "$HOME/.ssh/id.pem"
+    - ssh-keygen -f "$HOME/.ssh/id.pem" -y > "$HOME/.ssh/id.pub.pem"
+    - install -m 0600 "$SSH_KNOWN_HOSTS" "$HOME/.ssh/known_hosts"
+    - cp "$INVENTORY_VM1" infrastructure/iac/ansible/inventory/host_vars/vm1.yaml
+    - printf "[servers]\nvm1\n" > infrastructure/iac/ansible/inventory/hosts
+  script:
+    - cd infrastructure/iac/ansible
+    - ansible-galaxy collection install -r requirements.yaml
+    - ansible-galaxy install -r requirements.yaml
+    - ansible-playbook --private-key "$HOME/.ssh/id.pem" -e "ansible_ssh_private_key_file=$HOME/.ssh/id.pem" -i inventory/hosts site.yaml
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+      when: manual
+      allow_failure: true
+
+build-backend:
+  extends: .build-template
+  variables:
+    IMAGE_NAME: $BASE_IMAGE_NAME/backend:$CI_COMMIT_SHA-$CI_PIPELINE_ID
+    CONTEXT: $CI_PROJECT_DIR/src/backend
+    DOCKERFILE_PATH: $CI_PROJECT_DIR/src/backend/Containerfile
+    KANIKO_ARGS: --target=app
+
+build-frontend:
+  extends: .build-template
+  variables:
+    IMAGE_NAME: $BASE_IMAGE_NAME/frontend:$CI_COMMIT_SHA-$CI_PIPELINE_ID
+    CONTEXT: $CI_PROJECT_DIR/src/frontend
+    DOCKERFILE_PATH: $CI_PROJECT_DIR/src/frontend/Containerfile
+
+lint:
+  <<: *uv-job
+  stage: test
+  needs: []
+  script:
+    - uv run --no-sync ruff check src tests
+    - uv run --no-sync ruff format --check src tests
+    - uv run --no-sync mypy
+    - uv run --no-sync codespell src tests
+    - uv run --no-sync bandit -r src -c pyproject.toml
+
+test-backend:
+  <<: *uv-job
+  stage: test
+  needs: []
+  services:
+    - name: registry.spirit.t-education.com/cicd-images/postgres:16-alpine
+      alias: postgres
+  variables:
+    POSTGRES_DB: prodguild_test
+    POSTGRES_USER: prodguild_test
+    POSTGRES_PASSWORD: ci-only-test-password
+    TEST_DATABASE_URL: postgresql+psycopg://prodguild_test:ci-only-test-password@postgres:5432/prodguild_test
+  script:
+    - |
+      mkdir -p .cov
+      test_status=0
+      uv run --no-sync coverage run --source=src -m pytest -v --junitxml=.cov/junit.xml || test_status=$?
+      uv run --no-sync coverage report
+      uv run --no-sync coverage xml -o .cov/coverage.xml
+      exit "$test_status"
+  artifacts:
+    paths:
+      - src/backend/.cov/
+    reports:
+      junit: src/backend/.cov/junit.xml
+      coverage_report:
+        coverage_format: cobertura
+        path: src/backend/.cov/coverage.xml
+    expire_in: 1 week
+    when: always
+  coverage: '/TOTAL.*? (100(?:\.0+)?\%|[1-9]?\d(?:\.\d+)?\%)$/'
+
+test-sage-iac:
+  stage: test
+  needs: []
+  image: registry.spirit.t-education.com/cicd-images/python-3.12:latest
+  script:
+    - cd infrastructure/iac/sage
+    - python -m sage_iac validate
+    - python -m unittest discover -s tests -v
+
+test-frontend:
+  stage: test
+  needs: []
+  image: registry.spirit.t-education.com/cicd-images/nodejs-20:latest
+  cache:
+    key:
+      files:
+        - src/frontend/package-lock.json
+      prefix: frontend
+    paths:
+      - .cache/npm
+    policy: pull-push
+  script:
+    - cd src/frontend
+    - npm ci --cache "$CI_PROJECT_DIR/.cache/npm" --no-audit --no-fund
+    - npm run lint
+    - npm run build
+
+deploy-coolify:
+  image: registry.spirit.t-education.com/cicd-images/base-noble:latest
+  stage: deploy
+  resource_group: staging
+  script:
+    - |
+      set -eu
+      test -n "${COOLIFY_API_TOKEN:-}"
+      case "${COOLIFY_API_URL%/}" in
+        https://*/api/v1) COOLIFY_API_URL=${COOLIFY_API_URL%/} ;;
+        *) echo 'COOLIFY_API_URL must be a reachable HTTPS Coolify /api/v1 URL' >&2; exit 1 ;;
+      esac
+      case "$COOLIFY_SERVICE_UUID" in
+        ''|*[!a-zA-Z0-9_-]*) echo 'Invalid COOLIFY_SERVICE_UUID' >&2; exit 1 ;;
+      esac
+      payload=$(jq -n \
+        --arg backend "$BASE_IMAGE_NAME/backend:$CI_COMMIT_SHA-$CI_PIPELINE_ID" \
+        --arg frontend "$BASE_IMAGE_NAME/frontend:$CI_COMMIT_SHA-$CI_PIPELINE_ID" \
+        '{data: [{key: "BACKEND_IMAGE", value: $backend}, {key: "FRONTEND_IMAGE", value: $frontend}]}')
+      curl --fail --silent --show-error --max-time 60 --proto '=https' \
+        -X PATCH -H "Authorization: Bearer $COOLIFY_API_TOKEN" \
+        -H 'Content-Type: application/json' --data "$payload" --output /dev/null \
+        "$COOLIFY_API_URL/services/$COOLIFY_SERVICE_UUID/envs/bulk"
+      curl --fail --silent --show-error --max-time 60 --proto '=https' \
+        -X POST -H "Authorization: Bearer $COOLIFY_API_TOKEN" --output /dev/null \
+        "$COOLIFY_API_URL/services/$COOLIFY_SERVICE_UUID/restart?latest=true"
+  rules:
+    - if: '$CI_COMMIT_MESSAGE =~ /\[skip deploy\]/'
+      when: never
+    - if: "$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH && $COOLIFY_API_URL && $COOLIFY_SERVICE_UUID"
+
+workflow:
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+    - if: $CI_COMMIT_TAG

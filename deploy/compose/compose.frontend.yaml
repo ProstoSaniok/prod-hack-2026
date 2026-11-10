@@ -1,0 +1,20 @@
+services:
+  frontend:
+    image: ${FRONTEND_IMAGE:-template_project-frontend:latest}
+    build:
+      context: ./src/frontend
+      dockerfile: Containerfile
+      tags:
+        - template_project-frontend:latest
+      pull: true
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:80"]
+      interval: 30s
+      timeout: 5s
+      start_period: 5s
+      start_interval: 2s
+      retries: 5
+    networks:
+      - default
+    restart: unless-stopped
+    shm_size: 4mb

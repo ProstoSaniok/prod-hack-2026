@@ -1,0 +1,79 @@
+---
+- name: Base system setup
+  hosts: servers
+  gather_facts: true
+  become: true
+
+  pre_tasks:
+    - name: Update apt cache and upgrade system
+      ansible.builtin.apt:
+        update_cache: true
+        cache_valid_time: 3600
+        upgrade: dist
+      register: apt_upgrade
+      tags: system, updates
+
+    - name: Autoremove and clean
+      ansible.builtin.apt:
+        autoremove: true
+        autoclean: true
+      tags: system, updates
+
+    - name: Check system requirements
+      tags: validation
+      block:
+        - name: Verify Python 3 is available
+          ansible.builtin.command: which python3
+          register: python_check
+          changed_when: false
+          failed_when: python_check.rc != 0
+
+        - name: Check available memory
+          ansible.builtin.setup:
+            filter: ansible_memtotal_mb
+          register: memory_info
+          failed_when: memory_info.ansible_facts.ansible_memtotal_mb < 512
+
+  roles:
+    - role: common
+      tags: common, system, bootstrap
+
+    - role: security
+      tags: security, harden
+
+    - role: monitoring
+      when: monitoring_enabled | bool
+      tags: monitoring
+
+  post_tasks:
+    - name: Display system summary
+      ansible.builtin.debug:
+        msg: |
+          System setup completed on {{ inventory_hostname }}
+          OS: {{ ansible_distribution }} {{ ansible_distribution_version }}
+          Kernel: {{ ansible_kernel }}
+          Architecture: {{ ansible_architecture }}
+          Memory: {{ ansible_memtotal_mb }}MB
+          CPUs: {{ ansible_processor_vcpus }}
+          Storage: {{ ansible_devices.vda.size if ansible_devices.vda is defined
+                    else (ansible_devices.sda.size if ansible_devices.sda is defined
+                    else 'N/A') }}
+      tags: always, info
+
+    - name: Check if a reboot is required after updates
+      ansible.builtin.stat:
+        path: /var/run/reboot-required
+      register: reboot_required_file
+      tags: system
+
+    - name: Reboot if required
+      ansible.builtin.reboot:
+        msg: "Reboot triggered by Ansible for system updates"
+        connect_timeout: 10
+        reboot_timeout: 600
+        pre_reboot_delay: 5
+        post_reboot_delay: 45
+        test_command: uptime
+      when: reboot_required_file.stat.exists
+      register: reboot_result
+      tags: system

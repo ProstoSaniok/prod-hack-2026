@@ -1,0 +1,30 @@
+---
+- name: Install security packages
+  ansible.builtin.apt:
+    name: "{{ system_packages.security }}"
+    state: present
+    update_cache: true
+  tags: security
+
+- name: Render nftables configuration
+  ansible.builtin.template:
+    src: nftables.conf.j2
+    dest: /etc/nftables.conf
+    owner: root
+    group: root
+    mode: "0644"
+    validate: "nft -c -f %s"
+  notify: Reload nftables
+  tags: security, nftables
+
+- name: Enable and start nftables
+  ansible.builtin.systemd:
+    name: nftables
+    state: started
+    enabled: true
+  tags: security, nftables
+
+- name: Install and configure fail2ban
+  ansible.builtin.include_role:
+    name: geerlingguy.security
+  tags: security

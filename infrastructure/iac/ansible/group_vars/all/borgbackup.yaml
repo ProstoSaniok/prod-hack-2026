@@ -1,0 +1,46 @@
+---
+borg_repository:
+borg_install_method: pip
+borg_lock_wait_time: 10
+borg_source_directories:
+  - /home
+  - /root
+  - /etc
+  - /srv
+  - /var/www
+  - /var/lib/docker/volumes
+borg_ssh_key_type: "ed25519"
+borg_retention_policy:
+  keep_hourly: 1
+  keep_daily: 3
+  keep_weekly: 7
+  keep_monthly: 1
+
+borgmatic_timer_cron_name: "borgmatic"
+borgmatic_timer: cron
+borgmatic_timer_hour: "{{ range(0, 5) | random(seed=inventory_hostname) }}"
+borgmatic_timer_minute: "{{ range(0, 59) | random(seed=inventory_hostname) }}"
+borgmatic_timer_flags: ""
+
+borgmatic_config_name: config.yaml
+borgmatic_hooks:
+  on_error:
+    - echo "`date` - Error while creating a backup."
+  before_backup:
+    - echo "`date` - Starting backup."
+  after_backup:
+    - echo "`date` - Finished backup."
+borgmatic_checks:
+  - name: repository
+    frequency: "4 weeks"
+  - name: archives
+    frequency: "6 weeks"
+borgmatic_check_last: 3
+borgmatic_store_atime: false
+borgmatic_store_ctime: false
+borgmatic_relocated_repo_access_is_ok: false
+borgmatic_version: ">=1.7.11"
+
+borg_venv_path: /opt/borgmatic
+borg_user: root
+borg_group: root

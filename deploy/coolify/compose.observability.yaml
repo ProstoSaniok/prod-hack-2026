@@ -1,0 +1,75 @@
+# Optional independent resource; no Sage forwarding or public routes.
+name: ${PRODGUILD_STACK:?Match the app preview name}-observability
+services:
+  victoriametrics:
+    image: ${VICTORIAMETRICS_IMAGE:?Set the verified v1.154.0 digest}
+    command: [-storageDataPath=/data, -retentionPeriod=7d]
+    volumes:
+      - type: volume
+        source: metrics
+        target: /data
+    networks: [metrics]
+    labels:
+      - traefik.enable=false
+    healthcheck:
+      test: [CMD, wget, -qO-, "http://127.0.0.1:8428/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    mem_limit: 512m
+    cpus: 1.0
+  vmagent:
+    image: ${VMAGENT_IMAGE:?Set the verified v1.154.0 digest}
+    command:
+      - -promscrape.config=/etc/vmagent/scrape.yaml
+      - -remoteWrite.url=http://victoriametrics:8428/api/v1/write
+      - -remoteWrite.tmpDataPath=/queue
+      - -remoteWrite.maxDiskUsagePerURL=1GB
+    configs:
+      - source: scrape
+        target: /etc/vmagent/scrape.yaml
+    volumes:
+      - type: volume
+        source: queue
+        target: /queue
+    depends_on:
+      victoriametrics:
+        condition: service_healthy
+        required: true
+        restart: false
+    networks: [metrics, telemetry]
+    labels:
+      - traefik.enable=false
+    healthcheck:
+      test: [CMD, wget, -qO-, "http://127.0.0.1:8429/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    mem_limit: 256m
+    cpus: 0.5
+networks:
+  metrics:
+    internal: true
+  telemetry:
+    name: ${PRODGUILD_STACK}-telemetry
+    external: true
+volumes:
+  metrics:
+  queue:
+configs:
+  scrape:
+    content: |
+      global:
+        scrape_interval: 30s
+      scrape_configs:
+        - job_name: backend
+          static_configs:
+            - targets: ['backend:8080']
+        - job_name: vmagent
+          static_configs:
+            - targets: ['localhost:8429']
+        - job_name: victoriametrics
+          static_configs:
+            - targets: ['victoriametrics:8428']

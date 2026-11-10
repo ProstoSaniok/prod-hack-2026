@@ -1,0 +1,81 @@
+---
+security_firewall_default_policy: drop
+
+security_firewall_allowed_ports:
+  - "22/tcp"
+  - "80/tcp"
+  - "443/tcp"
+
+# Interfaces that accept all traffic (loopback is always recommended)
+security_nftables_trusted_interfaces:
+  - lo
+
+# IPs/CIDRs that bypass all filtering
+security_nftables_trusted_ips: []
+# - 10.0.0.0/8
+# - 192.168.1.100
+
+# IPs/CIDRs dropped immediately on input and forward
+security_nftables_blocked_ips: []
+# - 203.0.113.0/24
+
+# Extended port ranges with optional source filter
+# - { start: 8000, end: 9000, proto: tcp, source: "10.0.0.0/8", comment: "internal services" }
+security_nftables_allowed_port_ranges: []
+
+security_nftables_forward_policy: accept
+security_nftables_output_policy: accept
+
+# Rate limiting
+security_nftables_rate_limit_enabled: true
+security_nftables_icmp_rate: "10/second"
+security_nftables_new_conn_rate: "100/second"
+security_nftables_new_conn_burst: 50
+
+# Log packets that hit the default drop policy
+security_nftables_log_dropped: false
+security_nftables_log_prefix: "nftables-dropped: "
+
+# Raw nftables rule strings injected into the input chain
+# Each entry is a single nft rule line (without leading whitespace)
+security_nftables_custom_input_rules: []
+# - 'ip saddr 10.0.0.0/8 tcp dport 8080 accept comment "internal dashboard"'
+
+# Raw nftables rule strings injected into the forward chain
+security_nftables_custom_forward_rules: []
+
+# Raw nftables rule strings injected into the output chain
+security_nftables_custom_output_rules: []
+
+# DNAT rules — port forwarding
+# Optional fields: proto (default: tcp), source, iif (input interface), comment
+# - { port: 8080, dest: "10.0.0.5:80", proto: "tcp", source: "0.0.0.0/0", comment: "web backend" }
+# - { port: 25565, dest: "10.13.45.1:25565", proto: "tcp", iif: "enp3s0", comment: "Minecraft" }
+security_nftables_dnat_rules: []
+
+# SNAT rules — source NAT / masquerade
+# All match fields are optional; combine as needed:
+#   source  — match ip saddr (e.g. "10.0.0.0/24")
+#   dest    — match ip daddr (e.g. "10.13.45.1")
+#   proto   — protocol for dport/sport matching (e.g. "tcp", "udp")
+#   dport   — match destination port (requires proto)
+#   sport   — match source port (requires proto)
+#   iif     — match input interface name
+#   oif     — match output interface name
+#   to      — SNAT target address (e.g. "100.64.0.1")
+#   masquerade — use masquerade instead of explicit SNAT (bool, default false)
+#   comment — optional rule comment
+#
+# Examples:
+# - { source: "10.0.0.0/24", oif: "eth0", to: "203.0.113.1", comment: "outbound nat" }
+# - { source: "10.0.0.0/24", oif: "eth0", masquerade: true }
+# - { oif: "tailscale0", dest: "10.13.45.1", proto: "tcp", dport: "25565", to: "100.64.0.1", comment: "SNAT Minecraft via tailscale" }
+security_nftables_snat_rules: []
+
+# Interfaces to masquerade (simple outbound NAT shorthand)
+security_nftables_masquerade_interfaces: []
+# - eth0
+
+# Arbitrary nftables config appended verbatim at the end of the file
+# Use for anything not covered above (custom tables, chains, sets, etc.)
+security_nftables_custom_config: ""

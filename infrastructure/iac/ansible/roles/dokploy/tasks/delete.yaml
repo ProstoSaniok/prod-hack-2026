@@ -1,0 +1,72 @@
+---
+- name: Remove Dokploy services
+  become: true
+  community.docker.docker_swarm_service:
+    name: "{{ item }}"
+    state: absent
+  loop:
+    - dokploy-traefik
+    - dokploy
+    - dokploy-redis
+    - dokploy-postgres
+  register: _dokploy_remove_services
+  failed_when:
+    - _dokploy_remove_services is failed
+    - "'could not find' not in (_dokploy_remove_services.msg | default('') | lower)"
+    - "'not found' not in (_dokploy_remove_services.msg | default('') | lower)"
+    - "'not a swarm manager' not in (_dokploy_remove_services.msg | default('') | lower)"
+  tags: dokploy, deletion
+
+- name: Leave Docker Swarm
+  become: true
+  community.docker.docker_swarm:
+    state: absent
+  register: _dokploy_swarm_leave
+  failed_when:
+    - _dokploy_swarm_leave is failed
+    - "'not part of a swarm' not in (_dokploy_swarm_leave.msg | default('') | lower)"
+    - "'not a swarm manager' not in (_dokploy_swarm_leave.msg | default('') | lower)"
+  tags: dokploy, deletion
+
+- name: Remove Dokploy network
+  become: true
+  community.docker.docker_network:
+    name: "{{ dokploy_docker_network }}"
+    state: absent
+  register: _dokploy_remove_network
+  failed_when:
+    - _dokploy_remove_network is failed
+    - "'not found' not in (_dokploy_remove_network.msg | default('') | lower)"
+  tags: dokploy, deletion
+
+- name: Remove Dokploy configuration directory
+  become: true
+  ansible.builtin.file:
+    path: "{{ dokploy_config_dir }}"
+    state: absent
+  when: dokploy_remove_data_on_absent | bool
+  tags: dokploy, deletion, files
+
+- name: Remove Dokploy volumes
+  become: true
+  community.docker.docker_volume:
+    name: "{{ item }}"
+    state: absent
+  loop:
+    - dokploy-postgres-database
+    - redis-data-volume
+    - dokploy-docker-config
+  register: _dokploy_remove_volumes
+  failed_when:
+    - _dokploy_remove_volumes is failed
+    - "'no such volume' not in (_dokploy_remove_volumes.msg | default('') | lower)"
+    - "'not found' not in (_dokploy_remove_volumes.msg | default('') | lower)"
+  when: dokploy_remove_data_on_absent | bool
+  tags: dokploy, deletion, volumes
+
+- name: Display uninstallation message
+  ansible.builtin.debug:
+    msg:
+      - "Dokploy has been uninstalled"
+      - "Data removed: {{ dokploy_remove_data_on_absent | bool }}"
+  tags: dokploy, deletion

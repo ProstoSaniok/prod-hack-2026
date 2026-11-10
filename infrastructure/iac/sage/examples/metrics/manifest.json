@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "tenant": "hack-led-03",
+  "resources": [
+    {"id": "environment.stage", "kind": "environment", "definition": "environment.json"},
+    {"id": "system.backend", "kind": "system", "definition": "system.json"},
+    {
+      "id": "collection.backend",
+      "kind": "scrape_collection",
+      "definition": "collection.json",
+      "depends_on": ["environment.stage", "system.backend"]
+    }
+  ]
+}

@@ -1,0 +1,22 @@
+---
+- name: Install monitoring tools
+  ansible.builtin.apt:
+    name: "{{ system_packages.monitoring }}"
+    state: present
+  tags: monitoring
+
+- name: Manage Prometheus node exporter
+  when: monitoring_prometheus_node_exporter | bool
+  tags: monitoring, prometheus
+  block:
+    - name: Install Prometheus node exporter
+      ansible.builtin.apt:
+        name: prometheus-node-exporter
+        state: present
+      notify: Restart prometheus-node-exporter
+
+    - name: Ensure Prometheus node exporter is running and enabled
+      ansible.builtin.systemd:
+        name: prometheus-node-exporter
+        state: started
+        enabled: true

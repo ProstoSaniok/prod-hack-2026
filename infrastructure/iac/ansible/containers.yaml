@@ -1,0 +1,22 @@
+---
+- name: Containers
+  hosts: servers
+  gather_facts: true
+  become: true
+
+  pre_tasks:
+    - name: Ensure Docker and K3s are not both enabled
+      ansible.builtin.assert:
+        that:
+          - not (containers.docker.enabled and containers.k3s.enabled)
+        fail_msg: "Docker and K3s cannot both be enabled at the same time."
+        success_msg: "Configuration is valid."
+
+  roles:
+    - role: geerlingguy.docker
+      when: containers.docker.enabled | bool
+      tags: docker
+
+    - role: k3s.orchestration.k3s_server
+      when: containers.k3s.enabled | bool
+      tags: k3s

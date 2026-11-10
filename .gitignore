@@ -1,51 +1,34 @@
-# Operating system
+# General
 .DS_Store
-Thumbs.db
-Desktop.ini
+__MACOSX/
+.AppleDouble
+.LSOverride
+Icon?
 
-# IDEs
-.idea/
-.vscode/*
-!.vscode/extensions.json
-!.vscode/settings.json
-*.code-workspace
+# Thumbnails
+._*
 
-# Environment and secrets
+# Files that might appear in the root of a volume
+.DocumentRevisions-V100
+.fseventsd
+.Spotlight-V100
+.TemporaryItems
+.Trashes
+.VolumeIcon.icns
+.com.apple.timemachine.donotpresent
+
+# Directories potentially created on remote AFP share
+.AppleDB
+.AppleDesktop
+Network Trash Folder
+Temporary Items
+.apdisk
+
+# Env files
 .env
-.env.*
-!.env.example
-*.local
 
-# Angular / Node
-frontend/node_modules/
-frontend/dist/
-frontend/.angular/
-frontend/.cache/
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-pnpm-debug.log*
+# Generated artifacts
+artifacts/
 
-# Python
-backend/.venv/
-backend/venv/
-backend/__pycache__/
-backend/**/__pycache__/
-*.py[cod]
-*.pyo
-.pytest_cache/
-.mypy_cache/
-.ruff_cache/
-coverage.xml
-htmlcov/
-
-# Build and test output
-coverage/
-reports/
-*.log
-
-# Docker local state
-.docker/
-
-# Temporary design exports
-.zip
+# Frontend dependencies
+src/frontend/node_modules/

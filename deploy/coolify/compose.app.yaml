@@ -1,0 +1,230 @@
+# Coolify Git Application, Raw Compose only. See README.md before deployment.
+name: ${PRODGUILD_STACK:?Set a unique prodguild preview name}
+
+x-backend: &backend
+  image: ${BACKEND_IMAGE:?Set an exact reviewed SHA image or digest}
+  environment:
+    CONFIGURATION_PATH: /app/config.toml
+    DATABASE_URL: postgresql+psycopg://prodguild:${APP_DATABASE_PASSWORD:?Use a generated hex password}@postgresql:5432/prodguild
+    ACCESS_TOKEN_CRYPTO_KEY: ${ACCESS_TOKEN_CRYPTO_KEY:?Generate a Fernet key privately}
+    OTEL_SDK_DISABLED: "true"
+    LOCAL_DEMO_SEED: ${LOCAL_DEMO_SEED:-false}
+    DEMO_ORGANIZER_PASSWORD: ${DEMO_ORGANIZER_PASSWORD:-}
+  configs:
+    - source: backend_config
+      target: /app/config.toml
+  labels:
+    - traefik.enable=false
+  mem_limit: 512m
+  cpus: 1.0
+
+services:
+  postgresql:
+    image: ${POSTGRES_IMAGE:?Set a verified PostgreSQL 18 image digest}
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_ADMIN_PASSWORD:?Generate a separate admin password}
+      POSTGRES_DB: postgres
+    volumes:
+      - type: volume
+        source: app_postgresql
+        target: /var/lib/postgresql
+    networks:
+      - database
+    healthcheck:
+      test: [CMD, pg_isready, -h, 127.0.0.1, -U, postgres, -d, postgres]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+    labels:
+      - traefik.enable=false
+    restart: unless-stopped
+    mem_limit: 512m
+    cpus: 1.0
+
+  frontend:
+    image: ${FRONTEND_IMAGE:?Set an exact reviewed SHA image or digest}
+    networks: [application]
+    healthcheck:
+      test: [CMD, wget, -qO-, "http://127.0.0.1:80/"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+    labels:
+      - traefik.enable=false
+    restart: unless-stopped
+    mem_limit: 128m
+    cpus: 0.5
+
+  gateway:
+    image: ${CADDY_IMAGE:?Set a verified Caddy 2.11.7 image digest}
+    configs:
+      - source: gateway_config
+        target: /etc/caddy/Caddyfile
+    networks: [application, proxy]
+    depends_on:
+      backend:
+        condition: service_healthy
+        required: true
+        restart: false
+      frontend:
+        condition: service_healthy
+        required: true
+        restart: false
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=${COOLIFY_PROXY_NETWORK:?Inspect the destination proxy network}
+      - traefik.http.routers.${PRODGUILD_STACK}-app.rule=Host(`${APP_HOST:?Set a unique localhost hostname}`)
+      - traefik.http.routers.${PRODGUILD_STACK}-app.entrypoints=${TRAEFIK_ENTRYPOINT:?Inspect the existing HTTP entrypoint}
+      - traefik.http.routers.${PRODGUILD_STACK}-app.service=${PRODGUILD_STACK}-app
+      - traefik.http.routers.${PRODGUILD_STACK}-app.middlewares=${PRODGUILD_STACK}-headers
+      - traefik.http.services.${PRODGUILD_STACK}-app.loadbalancer.server.port=80
+      - traefik.http.middlewares.${PRODGUILD_STACK}-headers.headers.contenttypenosniff=true
+      - traefik.http.middlewares.${PRODGUILD_STACK}-headers.headers.customresponseheaders.X-Robots-Tag=noindex, nofollow
+    healthcheck:
+      test: [CMD, wget, -qO-, "http://127.0.0.1:8081/ready"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    mem_limit: 128m
+    cpus: 0.5
+
+  database-bootstrap:
+    image: ${POSTGRES_IMAGE:?Set a verified PostgreSQL 18 image digest}
+    command: [sh, /bootstrap.sh]
+    environment:
+      PGHOST: postgresql
+      PGUSER: postgres
+      PGDATABASE: postgres
+      PGPASSWORD: ${POSTGRES_ADMIN_PASSWORD:?Generate a separate admin password}
+      APP_DATABASE_PASSWORD: ${APP_DATABASE_PASSWORD:?Use a generated hex password}
+      # Only this superuser bootstrap connection suppresses secret-bearing SQL.
+      PGOPTIONS: -c log_statement=none -c log_min_error_statement=panic -c log_min_duration_statement=-1 -c log_duration=off -c log_min_duration_sample=-1
+    configs:
+      - source: database_bootstrap
+        target: /bootstrap.sh
+    depends_on:
+      postgresql:
+        condition: service_healthy
+        required: true
+        restart: false
+    networks:
+      - database
+    labels:
+      - traefik.enable=false
+    restart: "no"
+    mem_limit: 128m
+    cpus: 0.5
+
+  backend-initdb:
+    <<: *backend
+    command: [alembic, upgrade, head]
+    depends_on:
+      database-bootstrap:
+        condition: service_completed_successfully
+        required: true
+        restart: false
+    networks:
+      - database
+    restart: "no"
+
+  backend:
+    <<: *backend
+    depends_on:
+      backend-initdb:
+        condition: service_completed_successfully
+        required: true
+        restart: false
+    networks:
+      - application
+      - database
+      - telemetry
+    healthcheck:
+      test: [CMD, python, -c, "import http.client; c=http.client.HTTPConnection('127.0.0.1',8080,timeout=3); c.request('GET','/healthcheck'); r=c.getresponse(); raise SystemExit(r.status != 200 or r.read() != b'{\"ok\":true}')"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    restart: unless-stopped
+
+volumes:
+  app_postgresql:
+
+networks:
+  application:
+    internal: true
+  database:
+    internal: true
+  telemetry:
+    name: ${PRODGUILD_STACK}-telemetry
+    internal: true
+  proxy:
+    name: ${COOLIFY_PROXY_NETWORK:?Inspect the destination proxy network}
+    external: true
+
+configs:
+  backend_config:
+    content: |
+      [server]
+      host = "0.0.0.0"
+      port = 8080
+      access_log = true
+      [database]
+      [access_token]
+      expires_in = 86400
+  database_bootstrap:
+    content: |
+      #!/bin/sh
+      set -eu
+      # PGOPTIONS suppresses secret-bearing SQL logging in this connection.
+      # Read credentials from environment; terse diagnostics omit statement context.
+      psql --no-psqlrc --set=ON_ERROR_STOP=1 --set=VERBOSITY=terse <<'SQL'
+      \getenv app_password APP_DATABASE_PASSWORD
+      SELECT format('CREATE ROLE prodguild LOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE PASSWORD %L', :'app_password')
+      WHERE NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'prodguild')
+      \gexec
+      SELECT 'CREATE DATABASE prodguild OWNER prodguild'
+      WHERE NOT EXISTS (SELECT 1 FROM pg_database WHERE datname = 'prodguild')
+      \gexec
+      SQL
+  gateway_config:
+    content: |
+      {
+        admin off
+        auto_https off
+      }
+      :80 {
+        encode gzip zstd
+        @private_backend path /metrics /metrics/* /healthcheck /ready
+        handle @private_backend {
+          respond "Not found" 404
+        }
+        @backend path /api /api/* /auth /auth/* /docs /docs/oauth2-redirect /openapi.json /redoc
+        handle @backend {
+          request_body {
+            max_size 5976883
+          }
+          reverse_proxy backend:8080 {
+            fail_duration 30s
+            max_fails 10
+            health_uri /healthcheck
+            health_interval 10s
+            health_timeout 2s
+          }
+        }
+        handle {
+          request_body {
+            max_size 5976883
+          }
+          reverse_proxy frontend:80 {
+            fail_duration 30s
+            max_fails 10
+          }
+        }
+      }
+      http://127.0.0.1:8081 {
+        bind 127.0.0.1
+        respond /ready "OK" 200
+      }

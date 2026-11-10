@@ -1,0 +1,6 @@
+# Standalone stdlib unittest fixture, outside the backend pytest package.
+target-version = "py312"
+line-length = 120
+
+[lint]
+select = ["E", "F", "I", "UP", "B", "C90"]

@@ -1,0 +1,20 @@
+---
+- name: Install Salt Minion
+  ansible.builtin.package:
+    name: salt-minion
+    state: present
+
+- name: Configure Salt Minion
+  ansible.builtin.template:
+    src: minion.j2
+    dest: /etc/salt/minion
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Restart salt-minion
+
+- name: Ensure salt-minion service is enabled
+  ansible.builtin.service:
+    name: salt-minion
+    state: started
+    enabled: true

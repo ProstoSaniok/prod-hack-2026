@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "tenant": "hack-led-03",
+  "resources": [
+    {
+      "id": "dashboard.prodguild-stage",
+      "kind": "dashboard",
+      "definition": "dashboards/prodguild-stage.json"
+    }
+  ]
+}
