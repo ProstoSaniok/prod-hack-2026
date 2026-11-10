@@ -1,0 +1,275 @@
+<app-expert-feedback [exampleId]="reviewId()" />
+@if (!reviewId()) {
+  <header class="page-heading">
+    <div>
+      <h1>Ревью</h1>
+      <p>Посмотрите решение, предложите правки и обсудите код.</p>
+    </div>
+    <span class="demo-badge">Демо · 3 работы</span>
+  </header>
+  <p class="demo-note">
+    Вымышленные авторы и решения. Ваши правки и комментарии сохраняются в этом браузере.
+  </p>
+  <section class="review-list" aria-label="Работы на ревью">
+    @for (item of examples; track item.id) {
+      <a
+        class="review-row"
+        [routerLink]="['/reviews', item.id]"
+        [attr.aria-label]="'Открыть ревью: ' + item.title"
+      >
+        <span class="author-avatar" aria-hidden="true">{{ item.initials }}</span>
+        <div class="review-description">
+          <span class="eyebrow">{{ item.category }} · {{ item.language }}</span>
+          <h2>{{ item.title }}</h2>
+          <p>{{ item.summary }}</p>
+          <span class="author-name">{{ item.author }} · {{ item.files.length }} файла</span>
+        </div>
+        <span class="open-review">Открыть ревью <span aria-hidden="true">↗</span></span>
+      </a>
+    }
+  </section>
+} @else if (example(); as current) {
+  <a class="back-link" routerLink="/reviews"><span aria-hidden="true">←</span> Все работы</a>
+  <header class="page-heading workspace-heading">
+    <div>
+      <div class="heading-meta">
+        <span class="demo-badge">Демо-ревью</span><span>{{ current.language }}</span>
+      </div>
+      <h1>{{ current.title }}</h1>
+      <p>Решение: {{ current.author }}</p>
+    </div>
+    <button tuiButton appearance="flat" size="m" type="button" (click)="showDiscussions()">
+      Обсуждения <span class="count">{{ openCount() }}</span>
+    </button>
+  </header>
+  <p class="demo-note">
+    Локальный пример. Исходник автора не меняется; правки и обсуждения видны только вам.
+  </p>
+  @if (repository.notice()) {
+    <p class="storage-warning" role="status">{{ repository.notice() }}</p>
+  }
+  <nav class="review-tabs" aria-label="Разделы ревью">
+    <button
+      type="button"
+      [class.active]="panel() === 'overview'"
+      [attr.aria-pressed]="panel() === 'overview'"
+      (click)="panel.set('overview')"
+    >
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M5 3h10l4 4v14H5zM15 3v5h4M9 12h6M9 16h6" />
+      </svg>
+      Обзор
+    </button>
+    <button
+      type="button"
+      [class.active]="panel() === 'files'"
+      [attr.aria-pressed]="panel() === 'files'"
+      (click)="panel.set('files')"
+    >
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7h7l2-3h9v16H3z" /></svg> Файлы
+      <span class="count">{{ current.files.length }}</span>
+    </button>
+    <span class="change-count">С правками: {{ changedCount() }}</span>
+  </nav>
+  <p class="feedback" role="status">{{ notice() }}</p>
+  <section class="overview" aria-label="Обзор решения" [hidden]="panel() !== 'overview'">
+    <article>
+      <span class="eyebrow">Задание</span>
+      <h2>Что нужно решить</h2>
+      <p>{{ current.task }}</p>
+    </article>
+    <article>
+      <span class="eyebrow">От автора</span>
+      <h2>Подход к решению</h2>
+      <p>{{ current.approach }}</p>
+    </article>
+    <div class="overview-action">
+      <span>{{ current.files.length }} файла · открытых обсуждений: {{ openCount() }}</span
+      ><button tuiButton appearance="accent" size="m" type="button" (click)="panel.set('files')">
+        Посмотреть код
+      </button>
+    </div>
+  </section>
+  <div class="review-workspace" [hidden]="panel() !== 'files'">
+    <section class="file-panel" aria-label="Файлы решения">
+      <aside class="file-explorer">
+        <h2>Файлы решения</h2>
+        <app-file-tree
+          [files]="current.files"
+          [selected]="selectedPath()"
+          label="Файлы на ревью"
+          (fileSelect)="selectFile($event)"
+        />
+      </aside>
+      <div class="code-panel">
+        <div class="version-toolbar">
+          <div class="version-switch" role="group" aria-label="Версия файла">
+            <button
+              type="button"
+              [class.active]="version() === 'source'"
+              [attr.aria-pressed]="version() === 'source'"
+              (click)="version.set('source')"
+            >
+              Исходник
+            </button>
+            <button
+              type="button"
+              [class.active]="version() === 'changes'"
+              [attr.aria-pressed]="version() === 'changes'"
+              (click)="version.set('changes')"
+            >
+              Мои правки
+            </button>
+          </div>
+          <span>{{ version() === 'source' ? 'Только чтение' : 'Можно редактировать' }}</span>
+        </div>
+        <div class="editor-stage">
+          <app-repository-editor
+            [files]="documents()"
+            [scopeId]="'review:' + current.id + ':' + version()"
+            [selectedId]="selectedPath()"
+            [content]="content()"
+            [readOnly]="version() === 'source'"
+            [allowDelete]="false"
+            [allowCreate]="false"
+            emptyTitle="Выберите файл для проверки"
+            emptyDescription="Откройте файл в списке слева."
+            [status]="
+              repository.memoryOnly()
+                ? 'Изменения только в текущей сессии'
+                : 'Правки сохраняются в браузере'
+            "
+            (fileSelect)="selectFile($event)"
+            (contentChange)="edit($event)"
+            (save)="save()"
+            (download)="download()"
+          />
+        </div>
+      </div>
+    </section>
+    <aside id="review-discussions" class="discussion-panel" aria-label="Обсуждения к файлу">
+      <div class="discussion-heading">
+        <h2>Обсуждения</h2>
+        <span class="count">{{ threads().length }}</span>
+      </div>
+      @if (selectedFile(); as file) {
+        <p class="discussion-file">{{ file.path }}</p>
+        <div class="threads">
+          @for (thread of threads(); track thread.id) {
+            <article
+              class="thread"
+              [class.resolved]="thread.resolved"
+              [attr.aria-label]="'Обсуждение строки ' + thread.line"
+            >
+              <div class="thread-heading">
+                <strong>{{ thread.author }}</strong
+                ><span>{{ thread.resolved ? 'Решено' : 'Открыто' }}</span>
+              </div>
+              <span class="line-anchor">Исходник · строка {{ thread.line }}</span>
+              <code class="line-quote">{{ quote(thread) }}</code>
+              <p>{{ thread.text }}</p>
+              @for (message of thread.replies; track message.id) {
+                <div class="reply">
+                  <strong>{{ message.author }}</strong>
+                  <p>{{ message.text }}</p>
+                </div>
+              }
+              <div class="thread-actions">
+                <button tuiButton appearance="flat" size="s" type="button" (click)="reply(thread)">
+                  Ответить
+                </button>
+                <button
+                  tuiButton
+                  appearance="flat"
+                  size="s"
+                  type="button"
+                  [attr.aria-label]="
+                    (thread.resolved
+                      ? 'Открыть снова обсуждение строки '
+                      : 'Решить обсуждение строки ') + thread.line
+                  "
+                  (click)="resolve(thread)"
+                >
+                  {{ thread.resolved ? 'Открыть снова' : 'Решить' }}
+                </button>
+              </div>
+            </article>
+          } @empty {
+            <p class="no-comments">Обсуждений пока нет. Оставьте первый комментарий к файлу.</p>
+          }
+        </div>
+        <form class="comment-form" [formGroup]="form" (ngSubmit)="addComment()">
+          <div class="comment-form-heading">
+            <label for="review-comment">{{
+              replyTo() ? 'Ответ в обсуждение' : 'Новый комментарий'
+            }}</label>
+            @if (replyTo()) {
+              <button
+                tuiButton
+                appearance="flat"
+                size="s"
+                type="button"
+                aria-label="Отменить ответ"
+                (click)="cancelReply()"
+              >
+                Отмена
+              </button>
+            }
+          </div>
+          @if (!replyTo()) {
+            <tui-textfield class="line-field" [tuiTextfieldCleaner]="false">
+              <label tuiLabel for="review-line">Строка исходника</label>
+              <input
+                tuiTextfield
+                id="review-line"
+                type="number"
+                min="1"
+                [max]="lineCount()"
+                [formControl]="form.controls.line"
+                [attr.aria-invalid]="commentError() && commentField() === 'line' ? 'true' : null"
+                [attr.aria-describedby]="
+                  commentError() && commentField() === 'line'
+                    ? 'review-line-hint review-comment-error'
+                    : 'review-line-hint'
+                "
+              />
+            </tui-textfield>
+            <span id="review-line-hint" class="field-hint"
+              >От 1 до {{ lineCount() }} · привязка к исходнику</span
+            >
+          }
+          <textarea
+            #commentInput
+            tuiAppearance
+            appearance="textfield"
+            id="review-comment"
+            rows="4"
+            maxlength="2000"
+            placeholder="Что можно улучшить?"
+            [formControl]="form.controls.text"
+            [attr.aria-invalid]="commentError() && commentField() === 'text' ? 'true' : null"
+            [attr.aria-describedby]="
+              commentError() && commentField() === 'text' ? 'review-comment-error' : null
+            "
+          ></textarea>
+          @if (commentError()) {
+            <p id="review-comment-error" class="comment-error" role="alert">
+              {{ commentError() }}
+            </p>
+          }
+          <button tuiButton appearance="accent" size="m" type="submit">
+            {{ replyTo() ? 'Добавить ответ' : 'Добавить комментарий' }}
+          </button>
+        </form>
+      } @else {
+        <p class="no-comments">Выберите файл, чтобы увидеть обсуждения.</p>
+      }
+    </aside>
+  </div>
+} @else {
+  <section class="not-found">
+    <h1>Работа не найдена</h1>
+    <p>Выберите один из демонстрационных примеров.</p>
+    <a tuiButton appearance="accent" size="m" routerLink="/reviews">Все работы</a>
+  </section>
+}

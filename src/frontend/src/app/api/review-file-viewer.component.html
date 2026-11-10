@@ -1,0 +1,47 @@
+<p class="selection-hint">Выделите код или нажмите номер строки. Shift расширяет диапазон.</p>
+<app-snapshot-viewer
+  #viewer
+  [id]="id()"
+  resource="review-assignments"
+  [allowMaximize]="false"
+  [commentable]="false"
+  [editorExtensions]="editorExtensions"
+/>
+<ng-template #selectionAction let-anchor>
+  <div class="file-inline action">
+    <span
+      >{{ anchor.side === 'old' ? 'Исходник' : 'Решение' }} · строки {{ anchor.line }}–{{
+        anchor.end_line
+      }}</span
+    >
+    <button
+      tuiButton
+      appearance="accent"
+      size="s"
+      type="button"
+      [disabled]="disabled()"
+      (click)="startComment(anchor)"
+    >
+      <app-product-icon name="plus" /> Добавить комментарий
+    </button>
+  </div>
+</ng-template>
+<ng-template #savedComment let-item>
+  <article class="file-inline" tabindex="-1" aria-label="Комментарий к строкам">
+    <strong
+      >{{ item.side === 'old' ? 'Исходник' : 'Решение' }} · строка {{ item.line
+      }}{{ item.end_line && item.end_line !== item.line ? '–' + item.end_line : '' }}</strong
+    >
+    <p>{{ item.body }}</p>
+    <button
+      tuiButton
+      appearance="flat"
+      size="s"
+      type="button"
+      [disabled]="disabled()"
+      (click)="commentRemoved.emit(item.index)"
+    >
+      <app-product-icon name="trash" /> Удалить комментарий {{ item.index + 1 }}
+    </button>
+  </article>
+</ng-template>

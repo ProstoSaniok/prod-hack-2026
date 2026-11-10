@@ -1,0 +1,17 @@
+<app-workspace-host class="admin-layout">
+  <app-sidebar
+    [items]="navigation()"
+    [footerItems]="footerNavigation"
+    activeId="cases"
+    workspaceName="Администрирование"
+    [(expanded)]="expanded"
+    [(mobileOpen)]="mobileOpen"
+    (navigate)="onNavigate($event)"
+  />
+  <div class="admin-content" data-workspace-content>
+    <header class="admin-header">Кабинет организатора</header>
+    <main #content>
+      <router-outlet />
+    </main>
+  </div>
+</app-workspace-host>

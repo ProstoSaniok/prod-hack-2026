@@ -1,0 +1,151 @@
+:host-context([data-code-maximize-target]) {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+}
+
+:host {
+  display: block;
+  min-width: 0;
+}
+
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 12px 0;
+}
+
+.maximize-toggle {
+  margin-inline-start: auto;
+}
+
+:host-context([data-code-maximize-target]) .file-panel {
+  flex: 1 1 320px;
+  min-height: 320px;
+}
+
+:host-context([data-code-maximize-target]) .code-panel {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+:host-context([data-code-maximize-target]) .editor-stage {
+  display: flex;
+  flex: 1 1 0;
+  min-height: 0;
+  height: auto;
+}
+
+:host-context([data-code-maximize-target]) > :not(.file-panel) {
+  flex-shrink: 0;
+}
+
+:host-context([data-code-maximize-target]) .diff-surface[open] {
+  max-height: 35dvh;
+  overflow: auto;
+}
+
+.file-panel {
+  min-height: 540px;
+}
+
+.file-explorer {
+  min-height: 0;
+  overflow: auto;
+}
+
+.editor-stage {
+  height: 500px;
+}
+
+.diff-surface {
+  margin-top: 24px;
+  padding: 24px;
+  border-radius: 24px;
+  background: var(--prodguild-surface-raised);
+}
+
+summary {
+  cursor: pointer;
+  font-weight: 500;
+}
+
+.diff-surface h3 {
+  margin: 20px 0 12px;
+}
+
+.diff-surface ul {
+  padding-left: 16px;
+}
+
+.diff-surface li {
+  margin: 8px 0;
+}
+
+.diff-surface li button {
+  max-width: 100%;
+  padding: 8px;
+  text-align: left;
+  overflow-wrap: anywhere;
+  border: 0;
+  border-radius: 8px;
+  color: inherit;
+  background: var(--prodguild-surface-muted);
+  cursor: pointer;
+}
+
+pre {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  margin: 0;
+  padding: 8px;
+  font-family: monospace;
+}
+
+.diff {
+  max-height: 480px;
+  overflow: auto;
+  border-radius: 12px;
+}
+
+.addition {
+  background: #e4f5e9;
+}
+
+.deletion {
+  background: #fbe9e9;
+}
+
+@container (width < 650px) {
+  .file-panel {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .file-explorer {
+    max-height: 220px;
+    width: 100%;
+    border-right: 0;
+    border-bottom: 1px solid var(--prodguild-bg);
+  }
+
+  .code-panel {
+    width: 100%;
+  }
+
+  :host-context([data-code-maximize-target]) .file-panel {
+    flex-basis: 580px;
+    min-height: 580px;
+  }
+
+  :host-context([data-code-maximize-target]) .file-explorer {
+    max-height: 140px;
+  }
+
+  :host-context([data-code-maximize-target]) .code-panel {
+    flex: 1 1 0;
+  }
+}

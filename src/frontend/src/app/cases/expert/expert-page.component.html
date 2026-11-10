@@ -1,0 +1,328 @@
+<header class="page-heading">
+  <p class="eyebrow">Локальное демо · Вымышленные работы</p>
+  <h1>
+    {{
+      id()
+        ? (work()?.example?.title ?? 'Работа не найдена')
+        : resultsMode
+          ? 'Результаты демо-работ'
+          : 'Кабинет эксперта'
+    }}
+  </h1>
+  <p>
+    Данные доступны тестовым ролям в этом браузере. Серверные проекты, права и баланс не меняются.
+  </p>
+</header>
+@if (demo.notice()) {
+  <p class="notice" role="status">{{ demo.notice() }}</p>
+}
+@if (discussions.notice() && !resultsMode) {
+  <p class="notice" role="status">{{ discussions.notice() }}</p>
+}
+@if (!id()) {
+  @if (!resultsMode) {
+    <nav class="filters" aria-label="Очереди эксперта">
+      <button
+        tuiButton
+        size="m"
+        type="button"
+        [appearance]="selectedTab() === 'new' ? 'accent' : 'secondary'"
+        [attr.aria-pressed]="selectedTab() === 'new'"
+        (click)="selectedTab.set('new')"
+      >
+        Без ревью
+      </button>
+      <button
+        tuiButton
+        size="m"
+        type="button"
+        [appearance]="selectedTab() === 'reviewed' ? 'accent' : 'secondary'"
+        [attr.aria-pressed]="selectedTab() === 'reviewed'"
+        (click)="selectedTab.set('reviewed')"
+      >
+        Проверены ревьюэром
+      </button>
+      <button
+        tuiButton
+        size="m"
+        type="button"
+        [appearance]="selectedTab() === 'completed' ? 'accent' : 'secondary'"
+        [attr.aria-pressed]="selectedTab() === 'completed'"
+        (click)="selectedTab.set('completed')"
+      >
+        Завершённые
+      </button>
+    </nav>
+  }
+  <section aria-label="Демонстрационные работы" class="work-list">
+    @for (item of listed(); track item.id) {
+      <a
+        class="work-row"
+        [routerLink]="[basePath, item.id]"
+        [attr.aria-label]="'Открыть работу: ' + item.example.title"
+      >
+        <div>
+          <span class="eyebrow">{{ item.example.category }} · {{ item.example.language }}</span>
+          <h2>{{ item.example.title }}</h2>
+          <p>Автор: {{ item.example.author }} · Аккаунт «Исполнитель»</p>
+          <p>{{ item.review ? 'Ревьюэр: ' + item.review.reviewerName : 'Ревью ещё нет' }}</p>
+        </div>
+        <span class="badge">{{
+          demo.results()[item.id]
+            ? 'Проверка завершена'
+            : item.review
+              ? 'Перепроверка ревью'
+              : 'Ожидает проверки'
+        }}</span>
+      </a>
+    } @empty {
+      <p class="empty">Здесь пока нет работ.</p>
+    }
+  </section>
+} @else if (work(); as current) {
+  <a [routerLink]="basePath">← Все работы</a>
+  <p>
+    Автор: {{ current.example.author }} ·
+    {{ current.review ? 'Перепроверка ревью' : 'Первичная проверка' }}
+  </p>
+  <section class="surface" aria-label="Задание">
+    <h2>Задание</h2>
+    <p>{{ current.example.task }}</p>
+    <h3>Подход автора</h3>
+    <p>{{ current.example.approach }}</p>
+  </section>
+  @if (current.review; as review) {
+    <section class="surface" aria-label="Исходное ревью">
+      <h2>Исходное ревью · {{ review.reviewerName }}</h2>
+      <p class="badge">{{ demo.verdictLabel(review.verdict) }}</p>
+      <p class="prose">{{ review.feedback }}</p>
+      @for (thread of current.example.threads; track thread.id) {
+        <article class="thread">
+          <strong>{{ thread.path }}:{{ thread.line }}</strong>
+          <blockquote>{{ quote(thread) }}</blockquote>
+          <p>{{ thread.text }}</p>
+        </article>
+      }
+      <p>Исходное заключение сохраняется. После завершения итог эксперта становится действующим.</p>
+    </section>
+  }
+  <section class="file-surface" aria-label="Файлы участника">
+    <app-repository-editor
+      [files]="documents()"
+      [selectedId]="selectedPath()"
+      [content]="content()"
+      [scopeId]="current.id"
+      [readOnly]="true"
+      [showExplorer]="true"
+      [responsiveExplorer]="true"
+      [allowCreate]="false"
+      [allowDelete]="false"
+      (fileSelect)="selectFile($event)"
+      (download)="download()"
+    />
+  </section>
+  <section class="surface" aria-label="Комментарии эксперта">
+    <h2>Комментарии эксперта</h2>
+    @for (thread of threads(); track thread.id) {
+      <article class="thread">
+        <strong
+          >{{ thread.path }}:{{ thread.line }} ·
+          {{ thread.resolved ? 'Решено' : 'Открыто' }}</strong
+        >
+        <blockquote>{{ quote(thread) }}</blockquote>
+        <p class="prose">{{ thread.text }}</p>
+        @for (reply of thread.replies; track reply.id) {
+          <p class="reply">
+            <strong>{{ reply.author }}:</strong> {{ reply.text }}
+          </p>
+        }
+        @if (!readOnly()) {
+          <div class="actions">
+            <button tuiButton appearance="flat" size="s" type="button" (click)="reply(thread)">
+              Ответить</button
+            ><button tuiButton appearance="flat" size="s" type="button" (click)="resolve(thread)">
+              {{ thread.resolved ? 'Открыть обсуждение' : 'Отметить решённым' }}
+            </button>
+          </div>
+        }
+      </article>
+    } @empty {
+      <p>Комментариев пока нет.</p>
+    }
+    @if (!readOnly()) {
+      <form [formGroup]="commentForm" (ngSubmit)="addComment()" class="comment-form">
+        <p>
+          {{ replyTo() ? 'Ответ в обсуждение' : 'Новый комментарий' }} ·
+          {{ selectedPath() || 'Выберите файл' }}
+        </p>
+        <label for="expert-line">Строка исходника</label
+        ><input
+          tuiAppearance
+          appearance="textfield"
+          id="expert-line"
+          type="number"
+          min="1"
+          formControlName="line"
+        />
+        <label for="expert-comment">Комментарий</label
+        ><textarea
+          tuiAppearance
+          appearance="textfield"
+          id="expert-comment"
+          rows="3"
+          maxlength="2000"
+          formControlName="text"
+        ></textarea>
+        @if (commentError()) {
+          <p role="alert" class="error">{{ commentError() }}</p>
+        }
+        <div class="actions">
+          <button tuiButton appearance="secondary" size="m" type="submit">
+            Добавить комментарий
+          </button>
+          @if (replyTo()) {
+            <button tuiButton appearance="flat" size="m" type="button" (click)="cancelReply()">
+              Отменить ответ
+            </button>
+          }
+        </div>
+      </form>
+    }
+  </section>
+  @if (result(); as published) {
+    <section class="surface" aria-label="Итог эксперта">
+      <h2>Итог эксперта</h2>
+      <p class="badge">{{ demo.verdictLabel(published.verdict) }}</p>
+      <p class="prose">{{ published.feedback }}</p>
+      <p>Завершено {{ published.publishedAt | date: 'dd.MM.yyyy HH:mm' }} · Только чтение</p>
+    </section>
+    @if (published.quality; as quality) {
+      @if (demo.isExpert()) {
+        <section class="surface" aria-label="Оценка качества ревью">
+          <h2>Качество ревью · {{ quality.score }} / 100</h2>
+          <p class="badge">
+            {{ quality.verdict === 'confirmed' ? 'Подтверждено' : 'На доработку' }}
+          </p>
+          <h3>Сильные стороны</h3>
+          <p class="prose">{{ quality.strengths }}</p>
+          <h3>Проблемы</h3>
+          <p class="prose">{{ quality.issues }}</p>
+          <h3>Рекомендации</h3>
+          <p class="prose">{{ quality.recommendations }}</p>
+        </section>
+      }
+    }
+  } @else if (resultsMode) {
+    <section class="surface">
+      <h2>Ожидает проверки экспертом</h2>
+      <p>Итог появится здесь после публикации экспертом в этом браузере.</p>
+    </section>
+  } @else {
+    <form
+      [formGroup]="form"
+      novalidate
+      (ngSubmit)="prepare()"
+      class="assessment"
+      aria-label="Заключение эксперта"
+    >
+      <section class="surface">
+        <h2>Итог решения</h2>
+        <label for="expert-verdict">Вердикт решения</label
+        ><select id="expert-verdict" formControlName="verdict">
+          <option value="approved">Решение принято</option>
+          <option value="changes_requested">Нужны изменения</option>
+        </select>
+        <label for="expert-feedback">Фидбэк участнику · обязательно</label
+        ><textarea
+          tuiAppearance
+          appearance="textfield"
+          id="expert-feedback"
+          rows="4"
+          maxlength="4000"
+          formControlName="feedback"
+          aria-describedby="expert-validation"
+        ></textarea>
+      </section>
+      @if (current.review) {
+        <section class="surface">
+          <h2>Качество работы ревьюэра</h2>
+          <p>Эта оценка адресована ревьюэру и не является оценкой решения участника.</p>
+          <label for="expert-score">Качество ревью · 0–100</label
+          ><input
+            tuiAppearance
+            appearance="textfield"
+            id="expert-score"
+            type="number"
+            min="0"
+            max="100"
+            step="1"
+            formControlName="score"
+            aria-describedby="expert-validation"
+          />
+          <label for="expert-quality">Вердикт по ревью</label
+          ><select id="expert-quality" formControlName="qualityVerdict">
+            <option value="confirmed">Подтверждено</option>
+            <option value="needs_revision">На доработку</option>
+          </select>
+          <label for="expert-strengths">Сильные стороны · обязательно</label
+          ><textarea
+            tuiAppearance
+            appearance="textfield"
+            id="expert-strengths"
+            rows="3"
+            maxlength="4000"
+            formControlName="strengths"
+          ></textarea>
+          <label for="expert-issues">Проблемы · обязательно</label
+          ><textarea
+            tuiAppearance
+            appearance="textfield"
+            id="expert-issues"
+            rows="3"
+            maxlength="4000"
+            formControlName="issues"
+          ></textarea>
+          <label for="expert-next">Рекомендации · обязательно</label
+          ><textarea
+            tuiAppearance
+            appearance="textfield"
+            id="expert-next"
+            rows="3"
+            maxlength="4000"
+            formControlName="recommendations"
+          ></textarea>
+        </section>
+      }
+      <p id="expert-validation" role="alert" class="error">{{ error() }}</p>
+      <p class="save-note">Черновик сохраняется автоматически в этом браузере.</p>
+      @if (confirming()) {
+        <section class="confirmation" aria-label="Подтверждение публикации">
+          <h2>Опубликовать итог?</h2>
+          <p>
+            Участник увидит итог решения{{
+              current.review ? ', ревьюэр — оценку и рекомендации' : ''
+            }}. После публикации проверку нельзя изменить.
+          </p>
+          <div class="actions">
+            <button tuiButton appearance="accent" size="m" type="button" (click)="publish()">
+              Подтвердить публикацию</button
+            ><button
+              tuiButton
+              appearance="secondary"
+              size="m"
+              type="button"
+              (click)="confirming.set(false)"
+            >
+              Продолжить редактирование
+            </button>
+          </div>
+        </section>
+      } @else {
+        <button tuiButton appearance="accent" size="m" type="submit">Завершить проверку</button>
+      }
+    </form>
+  }
+} @else {
+  <p>Работа не найдена или недоступна этому тестовому аккаунту.</p>
+  <a [routerLink]="basePath">Вернуться к списку</a>
+}

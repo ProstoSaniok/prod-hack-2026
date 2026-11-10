@@ -1,0 +1,76 @@
+<app-workspace-host class="case-layout">
+  <app-sidebar
+    #sidebar
+    [items]="navigation()"
+    [activeId]="activeId()"
+    [(expanded)]="expanded"
+    [(mobileOpen)]="mobileOpen"
+  >
+    <div sidebar-footer class="sidebar-account">
+      @if (api.user()) {
+        <a
+          class="credits-balance"
+          routerLink="/profile"
+          fragment="wallet"
+          [attr.aria-label]="
+            'Баланс: ' + formattedCredits() + ' ' + creditsUnit() + '. История операций'
+          "
+          [attr.title]="'Баланс: ' + formattedCredits() + ' ' + creditsUnit()"
+          data-testid="credits-balance"
+          (click)="mobileOpen.set(false)"
+        >
+          <app-currency-amount
+            [value]="creditsBalance()"
+            [compact]="!expanded() && !sidebar.isMobile()"
+          />
+        </a>
+        <a
+          class="profile-entry"
+          routerLink="/profile"
+          aria-label="Профиль"
+          title="Профиль"
+          [attr.aria-current]="activeId() === 'profile' ? 'page' : null"
+          (click)="mobileOpen.set(false)"
+        >
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <circle cx="12" cy="7" r="4" />
+            <path d="M3 22v-3a9 9 0 0 1 18 0v3Z" />
+          </svg>
+          <span>Профиль</span>
+        </a>
+        <button
+          tuiButton
+          appearance="flat"
+          size="m"
+          type="button"
+          (click)="logout()"
+          [disabled]="loggingOut()"
+          aria-label="Выйти из аккаунта"
+          title="Выйти из аккаунта"
+        >
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M9 4H4v16h5 M10 12h11 m-4-4 4 4-4 4" />
+          </svg>
+          <span>{{ loggingOut() ? 'Выходим…' : 'Выйти' }}</span>
+        </button>
+      } @else {
+        <a class="profile-entry" routerLink="/login" aria-label="Войти" title="Войти">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <circle cx="12" cy="7" r="4" />
+            <path d="M3 22v-3a9 9 0 0 1 18 0v3Z" />
+          </svg>
+          <span>Профиль</span>
+        </a>
+      }
+    </div>
+  </app-sidebar>
+  <div class="case-content" data-workspace-content [attr.inert]="loggingOut() ? '' : null">
+    @if (api.notice()) {
+      <p class="storage-notice" role="status">{{ api.notice() }}</p>
+    }
+    @if (logoutError()) {
+      <p class="storage-notice" role="alert">{{ logoutError() }}</p>
+    }
+    <main id="case-main" [class.workspace-main]="editorPage()"><router-outlet /></main>
+  </div>
+</app-workspace-host>

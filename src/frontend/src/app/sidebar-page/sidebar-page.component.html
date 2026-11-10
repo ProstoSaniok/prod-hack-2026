@@ -1,0 +1,177 @@
+<div class="workspace-layout">
+  <app-sidebar
+    [items]="navigation"
+    [footerItems]="footerNavigation"
+    [activeId]="section()"
+    [workspaceName]="savedWorkspaceName()"
+    [(expanded)]="expanded"
+    [(mobileOpen)]="mobileOpen"
+    (navigate)="onNavigate($event)"
+  >
+  </app-sidebar>
+  <div class="workspace-content" data-testid="workspace-content">
+    <header class="workspace-header">
+      <span class="workspace-name">{{ savedWorkspaceName() }}</span>
+
+      <span class="user-avatar" aria-label="Анна Смирнова">АС</span>
+    </header>
+    <main>
+      <div class="page-heading">
+        <h1 #heading tabindex="-1">{{ sectionTitle() }}</h1>
+        @if (section() === 'projects') {
+          <button
+            #createButton
+            tuiButton
+            appearance="accent"
+            size="m"
+            type="button"
+            (click)="startProject()"
+          >
+            Новый проект
+          </button>
+        }
+      </div>
+      @switch (section()) {
+        @case ('projects') {
+          <div class="projects-layout">
+            <section class="projects-panel" aria-label="Список проектов">
+              <div class="list-toolbar">
+                <tui-textfield [tuiTextfieldCleaner]="false">
+                  <input
+                    tuiTextfield
+                    type="search"
+                    aria-label="Найти проект"
+                    placeholder="Найти проект"
+                    [formControl]="search"
+                  />
+                </tui-textfield>
+                <span class="result-count" aria-live="polite"
+                  >{{ filteredProjects().length }} из {{ projects().length }}</span
+                >
+              </div>
+              <ul class="project-list">
+                @for (project of filteredProjects(); track project.id) {
+                  <li>
+                    <button
+                      class="project-row"
+                      type="button"
+                      [class.selected]="selectedProjectId() === project.id"
+                      [attr.aria-pressed]="selectedProjectId() === project.id"
+                      (click)="selectProject(project)"
+                    >
+                      <span class="project-summary"
+                        ><strong>{{ project.name }}</strong
+                        ><span>{{ project.description }}</span></span
+                      >
+                      <span
+                        class="project-status"
+                        [class.complete]="project.status === 'Завершён'"
+                        >{{ project.status }}</span
+                      >
+                    </button>
+                  </li>
+                } @empty {
+                  <li class="empty-state">Проекты не найдены. Попробуйте другое название.</li>
+                }
+              </ul>
+            </section>
+            <aside class="details-panel" aria-label="Сведения о проекте">
+              @if (creating()) {
+                <h2>Новый проект</h2>
+                <form [formGroup]="projectForm" (ngSubmit)="createProject()">
+                  <tui-textfield [tuiTextfieldCleaner]="false">
+                    <label tuiLabel>Название проекта</label>
+                    <input
+                      #projectNameInput
+                      tuiTextfield
+                      [formControl]="projectName"
+                      maxlength="80"
+                      [invalid]="projectName.touched && projectName.invalid"
+                      [attr.aria-invalid]="projectName.touched && projectName.invalid"
+                      aria-describedby="project-name-error"
+                    />
+                  </tui-textfield>
+                  <small id="project-name-error" class="field-error">{{
+                    projectName.touched && projectName.invalid ? 'Введите название проекта' : ''
+                  }}</small>
+                  <tui-textfield [tuiTextfieldCleaner]="false">
+                    <label tuiLabel>Описание</label>
+                    <input tuiTextfield [formControl]="projectDescription" maxlength="160" />
+                  </tui-textfield>
+                  <div class="form-actions">
+                    <button tuiButton appearance="primary" size="m" type="submit">Добавить</button>
+                    <button
+                      tuiButton
+                      appearance="flat"
+                      size="m"
+                      type="button"
+                      (click)="cancelProject()"
+                    >
+                      Отмена
+                    </button>
+                  </div>
+                </form>
+              } @else {
+                @if (selectedProject(); as project) {
+                  <h2>{{ project.name }}</h2>
+                  <p>{{ project.description }}</p>
+                  <dl>
+                    <dt>Ответственный</dt>
+                    <dd>{{ project.owner }}</dd>
+                    <dt>Статус</dt>
+                    <dd>{{ project.status }}</dd>
+                  </dl>
+                  <a routerLink="/ui-kit"
+                    >Библиотека компонентов <span aria-hidden="true">↗</span></a
+                  >
+                }
+              }
+            </aside>
+          </div>
+        }
+        @case ('team') {
+          <section class="team-panel" aria-label="Участники команды">
+            <ul class="member-list">
+              @for (member of members; track member.name) {
+                <li>
+                  <span class="member-avatar" aria-hidden="true">{{ member.initials }}</span>
+                  <div>
+                    <strong>{{ member.name }}</strong>
+                    <p>{{ member.role }}</p>
+                  </div>
+                </li>
+              }
+            </ul>
+          </section>
+        }
+        @case ('settings') {
+          <section class="settings-panel" aria-label="Настройки пространства">
+            <h2>Рабочее пространство</h2>
+            <form [formGroup]="workspaceForm" (ngSubmit)="saveWorkspace()">
+              <tui-textfield [tuiTextfieldCleaner]="false"
+                ><label tuiLabel>Название пространства</label
+                ><input
+                  tuiTextfield
+                  [formControl]="workspaceName"
+                  maxlength="60"
+                  [invalid]="workspaceName.touched && workspaceName.invalid"
+                  [attr.aria-invalid]="workspaceName.touched && workspaceName.invalid"
+                  aria-describedby="workspace-name-error"
+              /></tui-textfield>
+              <small id="workspace-name-error" class="field-error">{{
+                workspaceName.touched && workspaceName.invalid
+                  ? 'Введите название пространства'
+                  : ''
+              }}</small>
+              <button tuiButton appearance="primary" size="m" type="submit">Сохранить</button>
+            </form>
+          </section>
+        }
+      }
+      <p class="example-note">
+        Данные примера хранятся в памяти и сбрасываются при обновлении страницы.
+      </p>
+      <p class="notice" role="status">{{ notice() }}</p>
+    </main>
+  </div>
+</div>

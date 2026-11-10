@@ -1,0 +1,147 @@
+@if (isMobile()) {
+  <button
+    #toggle
+    tuiButton
+    appearance="flat"
+    size="m"
+    type="button"
+    class="edge-toggle mobile-opener"
+    [class.mobile-hidden]="modalOpen()"
+    [attr.aria-hidden]="modalOpen() ? 'true' : null"
+    [attr.inert]="modalOpen() ? '' : null"
+    aria-label="Показать боковую панель"
+    [attr.aria-expanded]="modalOpen()"
+    [attr.aria-controls]="panelId"
+    (click)="togglePanel()"
+  >
+    <svg class="toggle-chevron" viewBox="0 0 24 24" aria-hidden="true">
+      <path d="m10 6 6 6-6 6" />
+    </svg>
+  </button>
+  <button
+    class="backdrop"
+    [class.mobile-open]="modalOpen()"
+    [attr.aria-hidden]="modalOpen() ? null : 'true'"
+    [attr.inert]="modalOpen() ? null : ''"
+    type="button"
+    tabindex="-1"
+    aria-label="Закрыть меню"
+    (click)="closeMobile()"
+  ></button>
+}
+<div
+  #panel
+  class="sidebar-frame"
+  [id]="panelId"
+  [class.mobile-open]="modalOpen()"
+  [attr.role]="isMobile() ? 'dialog' : null"
+  [attr.aria-modal]="modalOpen() ? 'true' : null"
+  [attr.aria-hidden]="panelVisible() ? null : 'true'"
+  [attr.inert]="panelVisible() ? null : ''"
+  aria-label="Навигация"
+  tabindex="-1"
+  [cdkTrapFocus]="modalOpen()"
+  (keydown.escape)="closeMobile()"
+>
+  @if (isMobile()) {
+    <button
+      tuiButton
+      appearance="flat"
+      size="m"
+      type="button"
+      class="edge-toggle mobile-close"
+      aria-label="Скрыть боковую панель"
+      aria-expanded="true"
+      [attr.aria-controls]="panelId"
+      cdkFocusInitial
+      (click)="closeMobile()"
+    >
+      <svg class="toggle-surface" viewBox="0 0 44 52" aria-hidden="true">
+        <path d="M0 0H26C26 12 44 8 44 26S26 40 26 52H0Z" />
+      </svg>
+      <svg class="toggle-chevron" viewBox="0 0 24 24" aria-hidden="true">
+        <path d="m14 6-6 6 6 6" />
+      </svg>
+    </button>
+  } @else {
+    <button
+      #toggle
+      tuiButton
+      appearance="flat"
+      size="m"
+      type="button"
+      class="edge-toggle"
+      [attr.aria-label]="toggleLabel()"
+      [attr.aria-expanded]="expanded()"
+      [attr.aria-controls]="panelId"
+      (click)="togglePanel()"
+    >
+      <svg class="toggle-surface" viewBox="0 0 44 52" aria-hidden="true">
+        <path d="M0 0H26C26 12 44 8 44 26S26 40 26 52H0Z" />
+      </svg>
+      <svg class="toggle-chevron" viewBox="0 0 24 24" aria-hidden="true">
+        <path [attr.d]="expanded() ? 'm14 6-6 6 6 6' : 'm10 6 6 6-6 6'" />
+      </svg>
+    </button>
+  }
+  <aside class="sidebar">
+    <a
+      class="sidebar-brand"
+      routerLink="/catalog"
+      aria-label="prodguild — каталог кейсов"
+      title="prodguild — каталог кейсов"
+      (click)="closeMobile()"
+    >
+      <img
+        class="brand-logo"
+        src="/imgs/logos/main-logo.svg"
+        alt="prodguild"
+        width="44"
+        height="44"
+      />
+      <span class="brand-name" aria-hidden="true">ProdGuild</span>
+    </a>
+    @if (workspaceName(); as name) {
+      <p class="workspace-name" [attr.title]="name">{{ name }}</p>
+    }
+    <nav class="main-navigation" aria-label="Основная навигация">
+      @for (item of items(); track item.id) {
+        <a
+          class="nav-item"
+          [routerLink]="item.href.startsWith('#') ? [] : item.href"
+          [fragment]="item.href.startsWith('#') ? item.href.slice(1) : undefined"
+          [attr.aria-label]="item.label"
+          [attr.title]="item.label"
+          [class.active]="activeId() === item.id"
+          [attr.aria-current]="activeId() === item.id ? 'page' : null"
+          (click)="select(item)"
+        >
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path [attr.d]="item.icon" /></svg>
+          <span class="item-label">{{ item.label }}</span>
+        </a>
+      }
+    </nav>
+    <div class="sidebar-footer">
+      <ng-content select="[sidebar-footer]" />
+      @if (footerItems().length) {
+        <nav aria-label="Дополнительная навигация">
+          @for (item of footerItems(); track item.id) {
+            <a
+              class="nav-item"
+              [routerLink]="item.href.startsWith('#') ? [] : item.href"
+              [fragment]="item.href.startsWith('#') ? item.href.slice(1) : undefined"
+              [attr.aria-label]="item.label"
+              [attr.title]="item.label"
+              [class.active]="activeId() === item.id"
+              [attr.aria-current]="activeId() === item.id ? 'page' : null"
+              (click)="select(item)"
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path [attr.d]="item.icon" /></svg>
+              <span class="item-label">{{ item.label }}</span>
+            </a>
+          }
+        </nav>
+      }
+    </div>
+  </aside>
+</div>

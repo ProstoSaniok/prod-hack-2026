@@ -1,0 +1,88 @@
+:host {
+  display: block;
+  min-width: 0;
+}
+
+.picker-toggle {
+  max-width: 100%;
+}
+
+.picker {
+  display: grid;
+  gap: 12px;
+  width: min(320px, calc(100vw - 48px));
+  padding: 16px;
+  color: var(--prodguild-text);
+  background: var(--prodguild-surface-raised);
+}
+
+.picker tui-textfield {
+  --tui-background-base: var(--prodguild-surface);
+  --tui-border-normal: transparent;
+  --tui-border-hover: transparent;
+  --tui-radius-l: var(--prodguild-radius-md);
+
+  background: var(--prodguild-surface);
+  box-shadow: none;
+}
+
+.picker input[tuiTextfield] {
+  box-shadow: none;
+  outline: 0;
+}
+
+.picker tui-textfield:focus-within {
+  outline: 2px solid var(--prodguild-text);
+  outline-offset: 2px;
+}
+
+.options {
+  display: grid;
+  gap: 4px;
+  max-height: 260px;
+  overflow-y: auto;
+}
+
+.option {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 44px;
+  padding: 8px 12px;
+  border-radius: var(--prodguild-radius-sm);
+  background: var(--prodguild-surface);
+  cursor: pointer;
+  overflow-wrap: anywhere;
+}
+
+.option:hover {
+  background: var(--prodguild-hover);
+}
+
+.option.selected {
+  background: var(--prodguild-surface-muted);
+}
+
+.selected-skills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 12px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.selected-skills li {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.selected-skills button {
+  max-width: 100%;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.options p {
+  margin: 8px 0;
+}

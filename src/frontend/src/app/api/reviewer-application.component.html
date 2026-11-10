@@ -1,0 +1,274 @@
+<a [routerLink]="service.api.canAssessReadiness() ? '/expert/applications' : '/profile'">
+  <app-product-icon name="arrow-left" />
+  {{ service.api.canAssessReadiness() ? 'Все заявки' : 'Профиль' }}
+</a>
+<h1>Заявка на экспертный уровень</h1>
+@if (loading()) {
+  <app-loading-state label="Загружаем заявку…" />
+}
+@if (error()) {
+  <p class="error" role="alert">{{ error() }}</p>
+}
+@if (notice()) {
+  <p class="notice" role="status">{{ notice() }}</p>
+}
+@if (error() && !dirty()) {
+  <button
+    tuiButton
+    appearance="secondary"
+    type="button"
+    [disabled]="busy() || loading()"
+    (click)="load()"
+  >
+    <app-product-icon name="refresh" /> Повторить загрузку заявки
+  </button>
+}
+@if (detail(); as current) {
+  <section class="workflow-panel" aria-label="Готовность к экспертному уровню">
+    <h2>{{ current.competency_name }}</h2>
+    <p role="status">{{ service.applicationStatus[current.status] }}</p>
+    <time [attr.datetime]="current.created_at"
+      >Подана {{ current.created_at | date: 'dd.MM.yyyy HH:mm' }}</time
+    >
+    <p>XP при подаче: {{ current.evidence_summary.value }}</p>
+    <div class="evidence-grid">
+      <section>
+        <h3>Успешные кейсы</h3>
+        <ul>
+          @for (item of current.evidence_summary.successful_cases; track item.case_id) {
+            <li>{{ item.title }} · {{ item.score }} / 100</li>
+          } @empty {
+            <li>Нет доступных сведений.</li>
+          }
+        </ul>
+      </section>
+      <section>
+        <h3>Испытательные периоды</h3>
+        <ul>
+          @for (item of current.evidence_summary.probations; track item.id) {
+            <li>
+              {{ item.grade === 'review_plus' ? 'Ревьюер+' : 'Ревьюер−' }} ·
+              {{ item.confirmed_reviews }} подтверждённых ревью
+            </li>
+          } @empty {
+            <li>Нет доступных сведений.</li>
+          }
+        </ul>
+      </section>
+    </div>
+    <h3>Портфолио ревью</h3>
+    <ul class="workflow-list">
+      @for (item of current.evidence_summary.reviews; track item.review_id) {
+        <li class="workflow-row">
+          <span
+            ><strong>{{ item.case_title }}</strong
+            ><time [attr.datetime]="item.published_at"
+              >{{ item.published_at | date: 'dd.MM.yyyy' }} · Качество {{ item.quality_score }} /
+              100</time
+            ></span
+          ><button
+            tuiButton
+            appearance="secondary"
+            size="s"
+            type="button"
+            [disabled]="contentLoading()"
+            (click)="openEvidence(item.review_id)"
+          >
+            Открыть ревью
+          </button>
+        </li>
+      } @empty {
+        <li>Опубликованных ревью в портфолио нет.</li>
+      }
+    </ul>
+  </section>
+  @if (contentLoading()) {
+    <app-loading-state label="Загружаем материал…" />
+  }
+  @if (contentError()) {
+    <p class="error" role="alert">{{ contentError() }}</p>
+  }
+  @if (evidence(); as item) {
+    <section class="workflow-panel" aria-label="Ревью из портфолио">
+      <div class="heading-row">
+        <h2>{{ item.case.title }}</h2>
+        <button tuiButton appearance="flat" type="button" (click)="evidence.set(null)">
+          Закрыть материал
+        </button>
+      </div>
+      <h3>Задание</h3>
+      <p class="prose">{{ item.case.description }}</p>
+      <h3>Ожидаемый результат</h3>
+      <p class="prose">{{ item.case.expected_result }}</p>
+      <p>
+        Оценка решения: {{ item.score }} / 100 ·
+        {{ item.verdict === 'approved' ? 'Принято' : 'Нужны изменения' }}
+      </p>
+      <h3>Сильные стороны</h3>
+      <p class="prose">{{ item.feedback.strengths }}</p>
+      <h3>Проблемы</h3>
+      <p class="prose">{{ item.feedback.problems }}</p>
+      <h3>Следующие шаги</h3>
+      <p class="prose">{{ item.feedback.next_steps }}</p>
+      @if (item.comments.length) {
+        <h3>Комментарии к решению</h3>
+        @for (comment of item.comments; track $index) {
+          <p class="prose">
+            @if (comment.path) {
+              <strong
+                >{{ comment.path }} · {{ comment.line
+                }}{{
+                  comment.end_line && comment.end_line !== comment.line
+                    ? '–' + comment.end_line
+                    : ''
+                }}</strong
+              ><br />
+            }
+            {{ comment.body }}
+          </p>
+        }
+      }
+      <p>
+        Подтверждённое качество ревью: {{ item.quality.score }} / 100 ·
+        {{ item.quality.confirmed_at | date: 'dd.MM.yyyy' }}
+      </p>
+    </section>
+  }
+  @if (current.assessments.length) {
+    <section class="workflow-panel" aria-label="Решения по заявке">
+      <h2>Решения по заявке</h2>
+      @for (item of current.assessments; track item.id) {
+        <button
+          tuiButton
+          appearance="secondary"
+          type="button"
+          [disabled]="contentLoading()"
+          (click)="openAssessment(item.id)"
+        >
+          {{ item.decision === 'approved' ? 'Готовность подтверждена' : 'Нужно развитие' }} ·
+          {{ item.created_at | date: 'dd.MM.yyyy' }}
+        </button>
+      }
+      @if (selectedAssessment(); as item) {
+        <h3>Комментарий эксперта</h3>
+        <p class="prose">{{ item.feedback }}</p>
+      }
+    </section>
+  }
+  @if (pending()) {
+    <section class="workflow-panel" aria-label="Незавершённая оценка">
+      <p>
+        Ответ на отправку решения не получен. Повторите исходный запрос, чтобы уточнить результат.
+      </p>
+      <button
+        tuiButton
+        appearance="secondary"
+        type="button"
+        [disabled]="busy() || loading()"
+        (click)="submit(true)"
+      >
+        Повторить отправку решения
+      </button>
+    </section>
+  }
+  @if (current.can_assess || dirty()) {
+    <section class="workflow-panel" aria-label="Оценка готовности">
+      <h2>{{ current.can_assess ? 'Решение эксперта' : 'Неотправленный комментарий' }}</h2>
+      @if (!current.can_assess) {
+        <p>Заявка больше не доступна для оценки. Скопируйте свой комментарий, если он вам нужен.</p>
+      }
+      <form [formGroup]="form" (ngSubmit)="prepare()">
+        <label for="readiness-decision">Готовность к экспертному уровню</label>
+        <tui-textfield [stringify]="decisionLabel" [tuiTextfieldCleaner]="false">
+          <select
+            tuiTextfield
+            id="readiness-decision"
+            formControlName="decision"
+            [readOnly]="!current.can_assess || busy() || pending() || confirming()"
+          ></select>
+          <tui-data-list *tuiTextfieldDropdown>
+            <button tuiOption type="button" value="approved">Подтвердить готовность</button>
+            <button tuiOption type="button" value="needs_development">
+              Рекомендовать дальнейшее развитие
+            </button>
+          </tui-data-list>
+        </tui-textfield>
+        <label for="readiness-feedback">Комментарий эксперта</label
+        ><textarea
+          id="readiness-feedback"
+          formControlName="feedback"
+          maxlength="6000"
+          [readOnly]="!current.can_assess || busy() || pending() || confirming()"
+          aria-describedby="readiness-help"
+        ></textarea>
+        <p id="readiness-help">
+          Укажите сильные стороны и рекомендации. Комментарий доступен владельцу заявки и экспертам
+          с доступом к ней.
+        </p>
+        @if (form.controls.feedback.touched && form.controls.feedback.invalid) {
+          <p class="error" role="alert">Введите комментарий до 6000 символов.</p>
+        }
+        @if (current.can_assess && !confirming()) {
+          <button
+            tuiButton
+            appearance="accent"
+            type="submit"
+            [disabled]="busy() || loading() || pending() || stale()"
+          >
+            Отправить решение эксперта
+          </button>
+        }
+      </form>
+      @if (confirming()) {
+        <div class="confirmation">
+          <h3>Подтвердить решение?</h3>
+          <p>
+            {{
+              form.controls.decision.value === 'approved'
+                ? 'Участник получит права эксперта по этому навыку.'
+                : 'Участник получит рекомендации и сможет подать новую заявку после развития навыка.'
+            }}
+            Изменить решение будет нельзя.
+          </p>
+          <div class="actions">
+            <button
+              tuiButton
+              appearance="accent"
+              type="button"
+              [disabled]="busy() || loading()"
+              (click)="submit()"
+            >
+              Подтвердить решение эксперта</button
+            ><button
+              tuiButton
+              appearance="flat"
+              type="button"
+              [disabled]="busy()"
+              (click)="confirming.set(false)"
+            >
+              Вернуться к комментарию
+            </button>
+          </div>
+        </div>
+      }
+      @if (stale()) {
+        <button
+          tuiButton
+          appearance="secondary"
+          type="button"
+          [disabled]="busy() || loading()"
+          (click)="load()"
+        >
+          Сверить состояние заявки
+        </button>
+        <p class="notice">
+          Обновите заявку и проверьте её состояние перед повторной отправкой. Введённый комментарий
+          сохранён.
+        </p>
+      }
+      @if (service.mutations.storageNotice()) {
+        <p role="status">{{ service.mutations.storageNotice() }}</p>
+      }
+    </section>
+  }
+}

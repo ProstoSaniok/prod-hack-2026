@@ -1,0 +1,165 @@
+:host {
+  display: grid;
+  gap: 24px;
+  min-width: 0;
+  color: var(--prodguild-text);
+}
+
+.surface,
+.confirmation {
+  display: grid;
+  gap: 16px;
+  min-width: 0;
+  padding: clamp(16px, 2.5vw, 28px);
+  border-radius: var(--prodguild-radius-lg);
+  background: var(--prodguild-surface);
+}
+
+.confirmation {
+  background: var(--prodguild-surface-raised);
+}
+
+.file-surface {
+  min-width: 0;
+}
+
+[hidden] {
+  display: none !important;
+}
+
+.quality-panels {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  gap: 24px;
+  align-items: start;
+  min-height: 0;
+}
+
+.quality-files,
+.quality-assessment {
+  min-width: 0;
+  min-height: 0;
+}
+
+.quality-assessment {
+  display: grid;
+  gap: 16px;
+}
+
+.file-view-switch {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.quality-workspace {
+  display: grid;
+  gap: 24px;
+  min-width: 0;
+}
+
+.maximize-toolbar {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.quality-workspace[data-code-maximize-target] {
+  gap: 16px;
+}
+
+.quality-workspace[data-code-maximize-target] > :not(.quality-panels) {
+  flex-shrink: 0;
+}
+
+.quality-workspace[data-code-maximize-target] .quality-panels {
+  flex: 1;
+  align-items: stretch;
+}
+
+.quality-workspace[data-code-maximize-target] :is(.quality-files, .file-surface) {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+
+.quality-workspace[data-code-maximize-target] :is(.quality-assessment, .source-review) {
+  overflow: auto;
+}
+
+.quality-workspace[data-code-maximize-target] .source-review {
+  align-content: start;
+}
+
+@container (width < 1150px) {
+  .quality-panels {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@container (width < 950px) {
+  .quality-workspace[data-code-maximize-target] .quality-panels {
+    flex: 0 0 auto;
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .quality-workspace[data-code-maximize-target] .quality-files {
+    height: max(620px, calc(100dvh - 150px));
+  }
+
+  .quality-workspace[data-code-maximize-target] .quality-assessment {
+    overflow: visible;
+  }
+}
+
+h2,
+h3,
+p {
+  margin: 0;
+}
+
+h2 {
+  font-size: var(--prodguild-font-section);
+  font-weight: 500;
+}
+
+p {
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+
+input:not([tuiTextfield]),
+textarea {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 44px;
+  padding: 12px 16px;
+  border: 0;
+  border-radius: var(--prodguild-radius-sm);
+  background: var(--prodguild-surface-raised);
+  color: inherit;
+  font: inherit;
+}
+
+textarea {
+  min-height: 140px;
+  resize: vertical;
+}
+
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid var(--prodguild-text);
+  outline-offset: 2px;
+}
+
+[role='alert'] {
+  color: var(--tui-text-negative);
+}
+
+button {
+  justify-self: start;
+  max-width: 100%;
+  white-space: normal;
+}

@@ -1,0 +1,163 @@
+:host {
+  display: block;
+  width: 100%;
+  max-width: 440px;
+}
+
+.auth-page,
+.auth-card {
+  width: 100%;
+  min-width: 0;
+}
+
+.auth-card {
+  padding: 32px;
+  border-radius: var(--prodguild-radius-lg);
+  background: var(--prodguild-surface-raised);
+
+  --tui-background-base: var(--prodguild-surface);
+  --tui-radius-l: var(--prodguild-radius-md);
+  --tui-radius-m: var(--prodguild-radius-sm);
+  --tui-height-l: 56px;
+  --tui-height-m: 48px;
+}
+
+.auth-card h1 {
+  margin: 0 0 8px;
+  font-size: var(--prodguild-font-title);
+  line-height: var(--prodguild-line-title);
+  font-weight: 500;
+}
+
+.auth-description {
+  margin: 0 0 24px;
+  color: var(--muted);
+  font-size: var(--prodguild-font-body);
+  line-height: 1.5;
+}
+
+form {
+  display: grid;
+  gap: 16px;
+}
+
+.field,
+.password-control {
+  min-width: 0;
+}
+
+tui-textfield {
+  width: 100%;
+}
+
+input[tuiAppearance][data-appearance='textfield'] {
+  box-shadow: none;
+}
+
+.password-control {
+  position: relative;
+}
+
+.password-control input {
+  padding-right: 92px;
+}
+
+.password-toggle {
+  position: absolute;
+  top: 12px;
+  right: 8px;
+  z-index: 1;
+  padding-inline: 8px;
+  min-width: 72px;
+  font-size: var(--prodguild-font-caption);
+}
+
+.field-hint,
+.field-error {
+  margin: 6px 2px 0;
+  font-size: var(--prodguild-font-caption);
+  line-height: 1.4;
+}
+
+.field-hint {
+  color: var(--muted);
+}
+
+.field-error {
+  color: #b52b28;
+}
+
+.form-error {
+  margin: 0;
+  padding: 12px;
+  border-radius: var(--prodguild-radius-sm);
+  color: #962522;
+  background: #fff0ef;
+  font-size: var(--prodguild-font-caption);
+  line-height: 1.4;
+}
+
+.submit-button {
+  width: 100%;
+  margin-top: 4px;
+}
+
+.switch-mode {
+  margin: 24px 0;
+  text-align: center;
+  color: var(--muted);
+  font-size: var(--prodguild-font-caption);
+  line-height: 1.7;
+}
+
+.switch-mode a {
+  margin-left: 4px;
+  color: var(--ink);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.switch-mode a:focus-visible,
+.admin-link:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 4px;
+  border-radius: var(--prodguild-radius-sm);
+}
+
+.demo-entry {
+  padding-top: 24px;
+  border-top: 1px solid var(--line);
+  text-align: center;
+}
+
+.demo-entry button {
+  width: 100%;
+}
+
+.role-buttons {
+  display: grid;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.demo-entry p {
+  margin: 8px 0 0;
+  color: var(--muted);
+  font-size: var(--prodguild-font-caption);
+  line-height: 1.4;
+}
+
+.admin-link {
+  width: 100%;
+  margin-top: 16px;
+}
+
+[aria-disabled='true'] {
+  opacity: 0.5;
+}
+
+@media (width <= 620px) {
+  .auth-card {
+    padding: 24px;
+  }
+}

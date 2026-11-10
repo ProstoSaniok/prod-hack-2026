@@ -1,0 +1,155 @@
+:host {
+  display: block;
+  min-width: 0;
+}
+
+.case-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 160px 140px;
+  align-items: center;
+  gap: 24px;
+  padding: 24px;
+  color: var(--ink);
+}
+
+.case-row:hover {
+  --muted: var(--prodguild-text);
+
+  background: var(--prodguild-hover);
+}
+
+.case-row:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: -4px;
+}
+
+.case-details {
+  min-width: 0;
+}
+
+h2 {
+  margin: 0 0 8px;
+  font-size: 20px;
+  font-weight: 500;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+}
+
+.description {
+  max-width: 640px;
+  margin: 0;
+  color: var(--muted);
+  font-size: 15px;
+  line-height: 1.45;
+}
+
+.case-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.case-action {
+  justify-self: end;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.4;
+}
+
+.work-progress {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 12px;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+progress {
+  width: 100px;
+  height: 4px;
+  overflow: hidden;
+  border: 0;
+  border-radius: 4px;
+  background: var(--paper);
+  accent-color: var(--ink);
+}
+
+progress::-webkit-progress-bar {
+  border-radius: 4px;
+  background: var(--paper);
+}
+
+progress::-webkit-progress-value {
+  border-radius: 4px;
+  background: var(--ink);
+}
+
+progress::-moz-progress-bar {
+  border-radius: 4px;
+  background: var(--ink);
+}
+
+@media (width <= 1000px) {
+  .case-row {
+    grid-template-columns: minmax(0, 1fr) 140px;
+    gap: 12px 24px;
+  }
+
+  .case-details {
+    grid-area: 1 / 1;
+  }
+
+  .case-meta {
+    grid-area: 2 / 1;
+    flex-flow: row wrap;
+    gap: 4px 16px;
+  }
+
+  .case-action {
+    grid-area: 1 / 2 / 3;
+  }
+}
+
+@media (width <= 620px) {
+  .case-row {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 12px;
+    padding: 20px;
+  }
+
+  .case-details,
+  .case-meta,
+  .case-action {
+    grid-area: auto;
+  }
+
+  .case-action {
+    justify-self: start;
+    margin-top: 4px;
+  }
+}
+
+@container (width <= 620px) {
+  .case-row {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 12px;
+    padding: 20px;
+  }
+
+  .case-details,
+  .case-meta,
+  .case-action {
+    grid-area: auto;
+  }
+
+  .case-action {
+    justify-self: start;
+    margin-top: 4px;
+  }
+}

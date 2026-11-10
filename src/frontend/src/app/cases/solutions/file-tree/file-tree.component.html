@@ -1,0 +1,101 @@
+<nav [attr.aria-label]="label()">
+  <ul>
+    @for (node of nodes(); track node.path) {
+      @if (node.draft) {
+        <li class="new-file" [style.padding-inline-start.px]="12 + node.depth * 16">
+          <div class="new-file-row">
+            <app-product-icon class="file-icon" name="file" />
+            <tui-textfield
+              tuiTextfieldSize="s"
+              [tuiTextfieldCleaner]="false"
+              [class.invalid]="validationError()"
+            >
+              <input
+                #filenameInput
+                tuiTextfield
+                [id]="inputId"
+                aria-label="Путь нового файла"
+                [attr.aria-invalid]="validationError() ? 'true' : null"
+                [attr.aria-describedby]="
+                  inputId + '-hint' + (validationError() ? ' ' + inputId + '-error' : '')
+                "
+                [formControl]="filename"
+                [readOnly]="createDisabled()"
+                autocomplete="off"
+                autocapitalize="off"
+                spellcheck="false"
+                placeholder="имя-файла.ts"
+                (input)="validationError.set('')"
+                (keydown.enter)="submit($event)"
+                (keydown.escape)="cancel($event)"
+              />
+            </tui-textfield>
+            <button
+              tuiIconButton
+              appearance="flat"
+              size="s"
+              type="button"
+              class="create-action"
+              aria-label="Создать файл"
+              title="Создать файл (Enter)"
+              [disabled]="createDisabled()"
+              (click)="submit()"
+            >
+              <app-product-icon name="check" />
+            </button>
+            <button
+              tuiIconButton
+              appearance="flat"
+              size="s"
+              type="button"
+              class="create-action"
+              aria-label="Отменить создание файла"
+              title="Отменить (Escape)"
+              [disabled]="createDisabled()"
+              (click)="cancel()"
+            >
+              <app-product-icon name="x" />
+            </button>
+          </div>
+          @if (validationError()) {
+            <p class="validation-error" [id]="inputId + '-error'" role="alert">
+              {{ validationError() }}
+            </p>
+          }
+          <p class="creation-hint" [id]="inputId + '-hint'">Enter — создать · Esc — отменить</p>
+        </li>
+      } @else {
+        <li>
+          <button
+            type="button"
+            [class.selected]="!node.directory && selected() === node.path"
+            [style.padding-inline-start.px]="12 + node.depth * 16"
+            [attr.aria-expanded]="node.directory ? !collapsed().has(node.path) : null"
+            [attr.aria-current]="!node.directory && selected() === node.path ? 'true' : null"
+            [attr.aria-label]="node.directory ? 'Папка ' + node.path : node.path"
+            [attr.title]="node.path"
+            (click)="select(node)"
+          >
+            @if (node.directory) {
+              <app-product-icon
+                class="directory-chevron"
+                [name]="collapsed().has(node.path) ? 'chevron-right' : 'chevron-down'"
+              />
+            } @else {
+              <span class="chevron-spacer" aria-hidden="true"></span>
+            }
+            <app-product-icon
+              class="file-icon"
+              [name]="
+                node.directory ? (collapsed().has(node.path) ? 'folder' : 'folder-open') : 'file'
+              "
+            />
+            <span class="file-name">{{ node.name }}</span>
+          </button>
+        </li>
+      }
+    } @empty {
+      <li class="empty">Пока нет файлов</li>
+    }
+  </ul>
+</nav>

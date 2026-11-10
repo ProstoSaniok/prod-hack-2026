@@ -1,0 +1,211 @@
+@font-face {
+  font-family: 'Tinkoff Sans';
+  src: url('/fonts/TinkoffSans-Regular.woff2') format('woff2');
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Tinkoff Sans';
+  src: url('/fonts/TinkoffSans-Medium.woff2') format('woff2');
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Tinkoff Sans';
+  src: url('/fonts/TinkoffSans-Bold.woff2') format('woff2');
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+}
+
+:root {
+  --prodguild-font-body: 16px;
+  --prodguild-font-caption: 14px;
+  --prodguild-font-subheading: 20px;
+  --prodguild-font-section: 24px;
+  --prodguild-font-title: 32px;
+  --prodguild-line-body: 24px;
+  --prodguild-line-caption: 20px;
+  --prodguild-line-section: 32px;
+  --prodguild-line-title: 40px;
+  --prodguild-bg: #ededed;
+  --prodguild-surface: #f9f9f9;
+  --prodguild-surface-raised: #fff;
+  --prodguild-surface-muted: #e1e1e1;
+  --prodguild-hover: #d3d3d3;
+  --prodguild-text: #3f3f3f;
+  --prodguild-text-secondary: #6c6c6c;
+  --prodguild-text-muted: #898989;
+  --prodguild-accent: #ffdd2d;
+  --prodguild-border: #c4c4c4;
+  --prodguild-radius-sm: 12px;
+  --prodguild-radius-md: 16px;
+  --prodguild-radius-lg: 24px;
+  --prodguild-radius-xl: 32px;
+  --ink: var(--prodguild-text);
+  --muted: var(--prodguild-text-secondary);
+  --paper: var(--prodguild-bg);
+  --line: var(--prodguild-border);
+  --yellow: var(--prodguild-accent);
+  --tui-font-heading: 'Tinkoff Sans', arial, sans-serif;
+  --tui-font-text: 'Tinkoff Sans', arial, sans-serif;
+  --tui-background-base: var(--prodguild-surface-raised);
+  --tui-background-base-alt: var(--prodguild-surface);
+  --tui-background-elevation-1: var(--prodguild-surface-raised);
+  --tui-background-elevation-2: var(--prodguild-surface-raised);
+  --tui-background-elevation-3: var(--prodguild-surface-raised);
+  --tui-background-neutral-1: var(--prodguild-surface-muted);
+  --tui-background-neutral-1-hover: var(--prodguild-hover);
+  --tui-background-neutral-1-pressed: var(--prodguild-border);
+  --tui-background-neutral-2: var(--prodguild-hover);
+  --tui-background-neutral-2-hover: var(--prodguild-border);
+  --tui-background-neutral-2-pressed: #b3b3b3;
+  --tui-background-accent-1: var(--prodguild-text);
+  --tui-background-accent-1-hover: var(--prodguild-text-secondary);
+  --tui-background-accent-1-pressed: var(--prodguild-text);
+  --tui-background-accent-2: var(--prodguild-accent);
+  --tui-background-accent-2-hover: var(--prodguild-accent);
+  --tui-background-accent-2-pressed: var(--prodguild-accent);
+  --tui-text-primary: var(--prodguild-text);
+  --tui-text-secondary: var(--prodguild-text-secondary);
+  --tui-text-tertiary: var(--prodguild-text-muted);
+  --tui-text-action: var(--prodguild-text);
+  --tui-text-action-hover: var(--prodguild-text-secondary);
+  --tui-text-primary-on-accent-1: var(--prodguild-surface-raised);
+  --tui-text-primary-on-accent-2: var(--prodguild-text);
+  --tui-border-normal: var(--prodguild-border);
+  --tui-border-hover: #b3b3b3;
+  --tui-border-focus: var(--prodguild-text);
+  --tui-radius-s: var(--prodguild-radius-sm);
+  --tui-radius-m: var(--prodguild-radius-md);
+  --tui-radius-l: var(--prodguild-radius-lg);
+  --tui-radius-xl: var(--prodguild-radius-xl);
+  --tui-shadow-small: none;
+  --tui-shadow-small-hover: none;
+  --tui-shadow-medium: none;
+  --tui-shadow-medium-hover: none;
+  --tui-shadow-popup: none;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  background: var(--prodguild-bg);
+  color: var(--ink);
+  font-family: 'Tinkoff Sans', Arial, sans-serif;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+button,
+input,
+select,
+textarea {
+  font-family: inherit;
+}
+
+/* Keep checkboxes distinct from radio buttons despite the softer control radii. */
+input[tuiCheckbox] {
+  --tui-radius-s: 6px;
+  --tui-radius-xs: 4px;
+}
+
+input[tuiCheckbox][data-appearance] {
+  border: 1px solid var(--prodguild-text-secondary);
+}
+
+input[tuiCheckbox]:checked[data-appearance] {
+  background: var(--prodguild-accent);
+  color: var(--prodguild-text);
+}
+
+input[tuiCheckbox]:focus-visible {
+  outline: 2px solid var(--prodguild-text);
+  outline-offset: 2px;
+}
+
+tui-root {
+  font: inherit;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+}
+
+/* Product typography and async feedback; showcase layouts keep their own scale. */
+:is(app-case-shell, app-auth-shell, app-admin-page) {
+  font-size: var(--prodguild-font-body);
+  line-height: var(--prodguild-line-body);
+
+  --tui-font-text-l: normal 16px / 24px var(--tui-font-text);
+  --tui-font-text-m: normal 16px / 24px var(--tui-font-text);
+  --tui-font-text-s: normal 14px / 20px var(--tui-font-text);
+  --tui-font-text-ui-l: normal 16px / 24px var(--tui-font-text);
+  --tui-font-text-ui-m: normal 16px / 24px var(--tui-font-text);
+  --tui-font-text-ui-s: normal 14px / 20px var(--tui-font-text);
+}
+
+:is(app-case-shell, app-auth-shell, app-admin-page) h1 {
+  font-size: var(--prodguild-font-title);
+  line-height: var(--prodguild-line-title);
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.prodguild-loading {
+  display: grid;
+  gap: 12px;
+  padding-block: 16px;
+}
+
+.prodguild-skeleton {
+  display: block;
+  height: 64px;
+  border-radius: var(--prodguild-radius-sm);
+  background: var(--prodguild-surface-muted);
+}
+
+.prodguild-feedback {
+  padding: 16px;
+  border-radius: var(--prodguild-radius-sm);
+  background: var(--prodguild-surface-raised);
+}
+
+@media (width <= 620px) {
+  :root {
+    --prodguild-font-title: 28px;
+    --prodguild-line-title: 36px;
+  }
+}
+
+.project-progress,
+.review-progress {
+  display: block;
+  width: 100%;
+  height: 8px;
+  margin-block: 20px 12px;
+  accent-color: var(--prodguild-accent);
+}
+
+app-case-shell main [role='alert'] {
+  padding: 16px;
+  border-radius: 12px;
+  background: var(--tui-status-negative-pale);
+  color: var(--tui-text-negative);
+}

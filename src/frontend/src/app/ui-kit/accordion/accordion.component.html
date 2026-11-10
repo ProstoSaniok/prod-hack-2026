@@ -1,0 +1,29 @@
+<button
+  tuiButton
+  appearance="flat"
+  size="l"
+  type="button"
+  class="heading"
+  [id]="panelId() + '-trigger'"
+  [attr.aria-expanded]="expanded()"
+  [attr.aria-controls]="panelId()"
+  (click)="toggle()"
+  (keydown.escape)="close()"
+>
+  <span>{{ heading() }}</span>
+  <svg aria-hidden="true" viewBox="0 0 24 24" [class.is-open]="expanded()">
+    <path d="m7 10 5 5 5-5"></path>
+  </svg>
+</button>
+<tui-expand [expanded]="expanded()">
+  <div
+    class="content"
+    role="region"
+    [id]="panelId()"
+    [attr.aria-labelledby]="panelId() + '-trigger'"
+    [attr.aria-hidden]="!expanded()"
+    [attr.inert]="expanded() ? null : ''"
+  >
+    <ng-content />
+  </div>
+</tui-expand>

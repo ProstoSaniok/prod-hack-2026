@@ -1,0 +1,18 @@
+@if (study(); as item) {
+  <a class="back-link" [routerLink]="['/cases', item.id]">Условия кейса</a>
+  @if (store.user(); as user) {
+    <app-solution-workspace
+      [study]="item"
+      [ownerId]="user.login"
+      [legacyWork]="work()"
+      [steps]="work()?.steps ?? []"
+      (stepChange)="toggleStep($event)"
+    />
+  }
+} @else {
+  <section class="not-found">
+    <h1>Кейс не найден</h1>
+    <p>Возможно, ссылка содержит ошибку. Выберите задачу в каталоге.</p>
+    <a tuiButton appearance="accent" routerLink="/catalog">Перейти к кейсам</a>
+  </section>
+}

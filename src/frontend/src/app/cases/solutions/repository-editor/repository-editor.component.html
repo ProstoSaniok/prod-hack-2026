@@ -1,0 +1,194 @@
+<div
+  class="repository-browser"
+  [class.with-explorer]="showExplorer()"
+  [class.responsive-explorer]="responsiveExplorer()"
+>
+  @if (showExplorer()) {
+    <aside class="embedded-explorer">
+      <div class="explorer-heading">
+        <h2>
+          <button
+            type="button"
+            class="explorer-root"
+            aria-label="Выбрать корень файлов"
+            title="Выбрать корень файлов"
+            [disabled]="busy() || createDisabled()"
+            (click)="selectRoot()"
+          >
+            <app-product-icon name="folder" />
+            {{ explorerLabel() }}
+          </button>
+        </h2>
+        @if (allowCreate() && !readOnly()) {
+          <button
+            #createButton
+            tuiIconButton
+            appearance="flat"
+            size="s"
+            type="button"
+            class="create-file-button"
+            [disabled]="busy()"
+            aria-label="Добавить файл"
+            title="Добавить файл"
+            [attr.aria-expanded]="creating()"
+            (click)="create.emit()"
+          >
+            <app-product-icon name="file-plus" />
+          </button>
+        }
+        @if (allowUpload() && !readOnly()) {
+          <button
+            tuiButton
+            appearance="secondary"
+            size="s"
+            type="button"
+            [disabled]="busy()"
+            aria-label="Загрузить файлы"
+            title="Загрузить файлы"
+            (click)="upload.emit()"
+          >
+            <app-product-icon name="arrow-up" />
+          </button>
+        }
+      </div>
+      <app-file-tree
+        [files]="files()"
+        [label]="explorerLabel()"
+        [selected]="active()?.path ?? ''"
+        [creating]="creating()"
+        [createDisabled]="busy() || createDisabled()"
+        (fileSelect)="selectPath($event)"
+        (fileCreate)="fileCreate.emit($event)"
+        (createCancel)="cancelCreate()"
+      />
+    </aside>
+  }
+  <section class="document-area" aria-label="Редактор решения">
+    <nav #tabStrip class="document-tabs" aria-label="Открытые файлы">
+      @for (file of tabs(); track file.id) {
+        <div class="document-tab" [class.active]="file.id === selectedId()">
+          <button
+            class="document-select"
+            type="button"
+            [attr.aria-pressed]="file.id === selectedId()"
+            [attr.title]="file.path"
+            [attr.aria-label]="'Открытый файл ' + file.path"
+            (click)="fileSelect.emit(file.id)"
+          >
+            <app-product-icon name="file" /><span>{{ file.path.split('/').at(-1) }}</span>
+            @if (file.modified) {
+              <span class="modified" aria-label="Есть изменения">●</span>
+            }
+          </button>
+          <button
+            class="close-tab"
+            type="button"
+            [disabled]="busy()"
+            [attr.aria-label]="'Закрыть вкладку ' + file.path"
+            (click)="close(file.id)"
+          >
+            <app-product-icon name="x" />
+          </button>
+        </div>
+      }
+    </nav>
+    @if (active(); as file) {
+      <div class="document-toolbar">
+        <div class="breadcrumb" [attr.title]="file.path">
+          @for (part of breadcrumb(); track $index) {
+            @if ($index) {
+              <app-product-icon name="chevron-right" />
+            }
+            <span>{{ part }}</span>
+          }
+        </div>
+        <div class="document-actions">
+          <button tuiButton appearance="flat" size="s" type="button" (click)="download.emit()">
+            <app-product-icon name="download" />
+            Скачать
+          </button>
+          @if (!readOnly() && !file.readOnly) {
+            @if (allowDelete()) {
+              <button
+                tuiButton
+                appearance="flat"
+                size="s"
+                type="button"
+                [disabled]="busy()"
+                (click)="remove.emit()"
+              >
+                <app-product-icon name="trash" />
+                Удалить
+              </button>
+            }
+            @if (!file.binary && showSave()) {
+              <button
+                tuiButton
+                appearance="flat"
+                size="s"
+                type="button"
+                [disabled]="busy()"
+                (click)="save.emit()"
+              >
+                <app-product-icon name="save" />
+                {{ busy() ? 'Подождите…' : 'Сохранить' }}
+              </button>
+            }
+          }
+        </div>
+      </div>
+      @if (file.binary; as attachment) {
+        <div class="attachment-view">
+          <svg viewBox="0 0 48 48" aria-hidden="true">
+            <path d="M12 5h16l9 9v29H12zM28 5v10h9M18 24h13M18 30h13" />
+          </svg>
+          <h2>{{ file.path.split('/').at(-1) }}</h2>
+          <p>{{ (attachment.size / 1024).toFixed(1) }} КБ · {{ attachment.mimeType }}</p>
+          <p>Вложение сохранено в проекте. Скачайте файл, чтобы открыть его.</p>
+          <button tuiButton appearance="secondary" size="m" type="button" (click)="download.emit()">
+            Скачать вложение
+          </button>
+        </div>
+      }
+    } @else {
+      <div class="document-empty">
+        <svg viewBox="0 0 48 48" aria-hidden="true">
+          <path d="m17 15-9 9 9 9m14-18 9 9-9 9m-5-23-5 28" />
+        </svg>
+        @if (emptyTitle()) {
+          <h2>{{ emptyTitle() }}</h2>
+        }
+        @if (emptyDescription()) {
+          <p>{{ emptyDescription() }}</p>
+        }
+        @if (!readOnly() && allowCreate() && !showExplorer()) {
+          <button tuiButton appearance="secondary" size="m" type="button" (click)="create.emit()">
+            Добавить файл
+          </button>
+        }
+      </div>
+    }
+    <!-- Keep one editor and its per-file history when all tabs are closed. -->
+    <div class="editor-canvas" [hidden]="!active() || !!active()?.binary">
+      <app-code-editor
+        [path]="active()?.path ?? ''"
+        [content]="active() && !active()?.binary ? content() : ''"
+        [editorExtensions]="active() && !active()?.binary ? editorExtensions() : noEditorExtensions"
+        [documentId]="scopeId() + ':' + (active()?.id ?? '')"
+        [readOnly]="!active() || !!active()?.binary || readOnly() || !!active()?.readOnly || busy()"
+        [selectionEnabled]="!!active() && !active()?.binary && selectionEnabled()"
+        [focusLines]="active() && !active()?.binary ? focusLines() : null"
+        (lineSelection)="lineSelection.emit($event)"
+        (contentChange)="contentChange.emit($event)"
+        (save)="save.emit()"
+      />
+    </div>
+    <footer class="editor-footer">
+      <span class="save-status" role="status">{{ status() }}</span
+      ><span class="editor-meta"
+        >{{ active()?.readOnly || readOnly() ? 'Только чтение' : fileType()
+        }}<span aria-hidden="true">·</span>{{ active()?.binary ? 'Вложение' : 'UTF-8' }}</span
+      >
+    </footer>
+  </section>
+</div>

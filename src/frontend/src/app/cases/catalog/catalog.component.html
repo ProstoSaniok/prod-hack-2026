@@ -1,0 +1,103 @@
+<header class="page-heading">
+  <div>
+    <h1>{{ heading() }}</h1>
+    <p>{{ subtitle() }}</p>
+  </div>
+  <span class="case-count" aria-live="polite">{{ countLabel() }}</span>
+</header>
+
+@if (sectionCases().length) {
+  <section class="filters" aria-label="Фильтры кейсов">
+    <div class="search-row">
+      <tui-textfield class="search-field" [tuiTextfieldCleaner]="false">
+        <input
+          tuiTextfield
+          type="search"
+          aria-label="Поиск по названию или навыку"
+          placeholder="Поиск по названию или навыку"
+          [formControl]="searchControl"
+        />
+        <svg class="search-icon" viewBox="0 0 24 24" aria-hidden="true">
+          <circle cx="10.5" cy="10.5" r="6.5" />
+          <path d="m15.5 15.5 5 5" />
+        </svg>
+      </tui-textfield>
+      <tui-textfield
+        class="level-field"
+        tuiDropdownLimitWidth="fixed"
+        [tuiDropdownOffset]="8"
+        [tuiTextfieldCleaner]="false"
+        [(open)]="levelOpen"
+      >
+        <select
+          tuiTextfield
+          aria-label="Уровень сложности"
+          placeholder="Все уровни"
+          aria-controls="case-level-options"
+          [attr.aria-expanded]="levelOpen()"
+          [formControl]="levelControl"
+          (keydown.enter)="levelOpen.set(true)"
+          (keydown.space)="levelOpen.set(true)"
+        ></select>
+        <svg class="select-chevron" viewBox="0 0 24 24" aria-hidden="true">
+          <path d="m7 10 5 5 5-5" />
+        </svg>
+        <ng-template tuiTextfieldDropdown>
+          <tui-data-list id="case-level-options" class="level-menu" aria-label="Уровни сложности">
+            @for (level of levelOptions; track level) {
+              <button
+                tuiOption
+                type="button"
+                class="level-option"
+                [value]="level"
+                [attr.aria-selected]="levelControl.value === level"
+              >
+                <span>{{ level || 'Все уровни' }}</span>
+                @if (levelControl.value === level) {
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 4 4L19 6" /></svg>
+                }
+              </button>
+            }
+          </tui-data-list>
+        </ng-template>
+      </tui-textfield>
+    </div>
+    <div class="category-filters" role="group" aria-label="Направление кейса">
+      @for (item of categories; track item) {
+        <button
+          tuiButton
+          type="button"
+          size="s"
+          class="category-chip"
+          [appearance]="category() === item ? 'accent' : 'outline'"
+          [attr.aria-pressed]="category() === item"
+          (click)="category.set(item)"
+        >
+          {{ item }}
+        </button>
+      }
+    </div>
+  </section>
+}
+
+@if (filteredCases().length) {
+  <section class="case-list" aria-label="Кейсы">
+    @for (study of filteredCases(); track study.id) {
+      <app-case-card [study]="study" [work]="workspace.workFor(study.id)" />
+    }
+  </section>
+} @else {
+  <section class="empty-state" aria-labelledby="empty-title">
+    @if (sectionCases().length) {
+      <h2 id="empty-title">По вашему запросу ничего не нашлось</h2>
+      <p>Попробуйте другое название, навык или измените фильтры.</p>
+      <button tuiButton type="button" appearance="primary" size="m" (click)="resetFilters()">
+        Сбросить фильтры
+      </button>
+    } @else {
+      <h2 id="empty-title">Нет начатых кейсов</h2>
+      <p>Выберите кейс в каталоге и начните работу над решением.</p>
+      <a tuiButton routerLink="/catalog" appearance="primary" size="m">Перейти в каталог</a>
+    }
+  </section>
+}

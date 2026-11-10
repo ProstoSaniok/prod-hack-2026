@@ -1,0 +1,475 @@
+<a class="back-link" routerLink="/admin">
+  <app-product-icon name="arrow-left" />
+  Все кейсы
+</a>
+@if (loading()) {
+  <app-loading-state label="Открываем кейс…" [skeleton]="true" />
+} @else if (loadError()) {
+  <div class="message" role="alert">
+    <p>{{ loadError() }}</p>
+    <button tuiButton appearance="secondary" type="button" (click)="load()">
+      Повторить загрузку
+    </button>
+  </div>
+} @else {
+  <header class="page-heading">
+    <div>
+      <div class="heading-status">
+        @if (record(); as current) {
+          <span class="status">{{ statusLabel(current) }}</span>
+        }
+        <p class="save-status" role="status">
+          <app-product-icon
+            [name]="
+              error() || syncError() || invalidNumbers()
+                ? 'save'
+                : metadataSaving() || formDirty() || !record()
+                  ? 'clock'
+                  : 'check'
+            "
+          />
+          {{ saveStatus() }}
+        </p>
+      </div>
+      <h1 #pageHeading tabindex="-1">{{ record()?.name || 'Новый кейс' }}</h1>
+      @if (record(); as current) {
+        <p class="case-difficulty">
+          Общая сложность: {{ caseDifficultyLabel(current.difficulty) }}. Рассчитана по сохранённым
+          уровням навыков.
+        </p>
+      }
+      @if (!record()) {
+        <p>Изменения сохраняются автоматически. Заполните задание, добавьте материалы и эталон.</p>
+      }
+    </div>
+    @if (record() && record()?.status !== 'published') {
+      <div class="publish-controls">
+        <button
+          tuiButton
+          appearance="accent"
+          type="button"
+          [disabled]="!!publicationBlocker()"
+          [attr.aria-describedby]="publicationBlocker() ? 'publication-hint' : null"
+          (click)="openPublish()"
+        >
+          <app-product-icon name="upload" />
+          Опубликовать кейс
+        </button>
+        @if (publicationBlocker()) {
+          <p id="publication-hint" class="save-hint" role="status">{{ publicationBlocker() }}</p>
+          @if (!working() && !locked()) {
+            <a [routerLink]="[]" [queryParams]="{ section: publicationSection() }">
+              {{
+                publicationSection() === 'details'
+                  ? 'Перейти к описанию и навыкам'
+                  : 'Перейти к эталону'
+              }}
+            </a>
+          }
+        }
+      </div>
+    }
+  </header>
+  @if (storageError()) {
+    <p role="alert">{{ storageError() }}</p>
+  }
+  @if (busy() || refreshing()) {
+    <app-loading-state
+      [label]="refreshing() ? 'Обновляем состояние кейса…' : 'Сохраняем изменения…'"
+    />
+  }
+  @if (error()) {
+    <div class="message error" role="alert">
+      <p>{{ error() }}</p>
+      @if (retrying() || formDirty()) {
+        <p>Результат операции пока не подтверждён. Повторите её с теми же данными.</p>
+        <button
+          tuiButton
+          appearance="secondary"
+          type="button"
+          [disabled]="busy()"
+          (click)="retry()"
+        >
+          Повторить операцию
+        </button>
+      } @else if (record()) {
+        <button
+          tuiButton
+          appearance="secondary"
+          type="button"
+          [disabled]="working()"
+          (click)="refresh()"
+        >
+          Повторить загрузку состояния
+        </button>
+      }
+    </div>
+  }
+  @if (syncError()) {
+    <div class="message error" role="alert">
+      <p>Не удалось обновить состояние кейса. Изменения в редакторе сохранены.</p>
+      <p>{{ syncError() }}</p>
+      <button
+        tuiButton
+        appearance="secondary"
+        type="button"
+        [disabled]="refreshing()"
+        (click)="refresh()"
+      >
+        Повторить загрузку состояния
+      </button>
+    </div>
+  }
+  @if (notice()) {
+    <p class="notice" role="status">{{ notice() }}</p>
+  }
+  @if (metadataConflict() && !locked() && record(); as latest) {
+    <section class="confirmation" aria-label="Конфликт описания">
+      <h2>Описание изменено в другой вкладке</h2>
+      <p>Ваш текст сохранён в форме. Сравните его с текущим описанием перед сохранением.</p>
+      <details>
+        <summary>Описание на сервере</summary>
+        <h3>{{ latest.name }}</h3>
+        <p class="description">{{ latest.description }}</p>
+        <p class="description">{{ latest.expectedResult }}</p>
+        <ul>
+          @for (skill of latest.competencies; track skill.competency_id) {
+            <li>
+              {{ competencyName(skill.competency_id) }} ·
+              {{ skillLevelLabel(skill.required_value) }} · вес
+              {{ skillWeightLabel(skill.weight) }}
+            </li>
+          }
+        </ul>
+      </details>
+      <div class="actions">
+        <button
+          tuiButton
+          appearance="secondary"
+          type="button"
+          [disabled]="blocked()"
+          (click)="resolveMetadata(false)"
+        >
+          Загрузить описание с сервера
+        </button>
+        <button
+          tuiButton
+          appearance="flat"
+          type="button"
+          [disabled]="blocked()"
+          (click)="resolveMetadata(true)"
+        >
+          Оставить мои изменения
+        </button>
+      </div>
+    </section>
+  }
+  @if (record(); as current) {
+    <nav class="section-nav" aria-label="Разделы кейса">
+      <a
+        [routerLink]="[]"
+        [queryParams]="{ section: 'details' }"
+        [attr.aria-current]="section() === 'details' ? 'page' : null"
+      >
+        <app-product-icon name="file" /><span>Описание</span>
+      </a>
+      <a
+        [routerLink]="[]"
+        [queryParams]="{ section: 'materials' }"
+        [attr.aria-current]="section() === 'materials' ? 'page' : null"
+      >
+        <app-product-icon name="folder" /><span>Материалы</span>
+      </a>
+      <a
+        [routerLink]="[]"
+        [queryParams]="{ section: 'reference' }"
+        [attr.aria-current]="section() === 'reference' ? 'page' : null"
+      >
+        <app-product-icon name="shield-check" /><span>Эталонное решение</span>
+      </a>
+    </nav>
+    @if (current.frozen) {
+      <p class="message">
+        Участники уже начали решать этот кейс. Описание, материалы и эталон доступны только для
+        чтения.
+      </p>
+    } @else if (current.status === 'published') {
+      <p class="message">
+        Кейс опубликован. Чтобы изменить содержание, сначала переместите его в архив.
+      </p>
+    }
+  }
+  <section
+    class="details"
+    [hidden]="record() && section() !== 'details'"
+    aria-label="Описание кейса"
+  >
+    @if (!locked() || formDirty()) {
+      @if (locked()) {
+        <p role="status">
+          Кейс стал доступен только для чтения. Ваше несохранённое описание осталось в форме:
+          скачайте его перед загрузкой серверной версии.
+        </p>
+        <button tuiButton appearance="secondary" type="button" (click)="downloadDescription()">
+          Скачать моё описание
+        </button>
+        <button tuiButton appearance="secondary" type="button" (click)="discardLockedDescription()">
+          Показать сохранённое описание
+        </button>
+      }
+      <app-case-form
+        [initial]="formInitial()"
+        [conflict]="metadataConflict()"
+        [competencies]="cases.competencies()"
+        [loading]="cases.competencyCatalog.loading()"
+        [loadError]="cases.competencyCatalog.error()"
+        [hasMore]="cases.competencyCatalog.hasMore()"
+        [busy]="!!locked() || busy()"
+        (opened)="cases.loadCompetencies()"
+        (loadMoreRequested)="cases.competencyCatalog.loadMore()"
+        (draftChange)="onDraft($event)"
+      />
+    } @else if (record(); as current) {
+      <h2>Задание</h2>
+      <p class="description">{{ current.description }}</p>
+      <h2>Ожидаемый результат</h2>
+      <p class="description">{{ current.expectedResult }}</p>
+      <h2>Компетенции</h2>
+      <app-competency-names-notice [skills]="current.competencies" />
+      <ul class="skills">
+        @for (skill of current.competencies; track skill.competency_id) {
+          <li>
+            <strong>{{ competencyName(skill.competency_id) }}</strong
+            ><span
+              >{{ skillLevelLabel(skill.required_value) }} · вес
+              {{ skillWeightLabel(skill.weight) }}</span
+            >
+          </li>
+        }
+      </ul>
+    }
+  </section>
+  @if (record(); as current) {
+    <div [hidden]="section() !== 'materials'">
+      <app-file-workspace
+        #materialsWorkspace
+        [autosave]="true"
+        [writeContext]="materialWrites"
+        title="Материалы кейса"
+        description="Файлы для участников."
+        [prefix]="prefix()"
+        [versions]="caseQuery()"
+        [allowEmpty]="true"
+        [readOnly]="!!locked() || busy() || retrying() || metadataConflict()"
+        (changed)="refresh()"
+        (unsettled)="materialsUnsettled.set($event)"
+        (dirty)="materialsDirty.set($event)"
+        (working)="materialsWorking.set($event)"
+      />
+    </div>
+    <div [hidden]="section() !== 'reference'">
+      @if (reference(); as reference) {
+        <app-file-workspace
+          #referenceWorkspace
+          [autosave]="true"
+          [writeContext]="referenceWrites"
+          title="Эталонное решение"
+          description="Приватное решение. Изменения материалов сюда не переносятся."
+          [prefix]="prefix() + '/reference-solution'"
+          [versions]="referenceQuery()"
+          [readOnly]="!!locked() || busy() || retrying() || metadataConflict()"
+          (changed)="refresh()"
+          (unsettled)="referenceUnsettled.set($event)"
+          (dirty)="referenceDirty.set($event)"
+          (working)="referenceWorking.set($event)"
+        >
+          <span class="reference-status" role="status">
+            <app-product-icon [name]="reference.ready ? 'shield-check' : 'clock'" />{{
+              reference.ready ? 'Готов к публикации' : 'Готовность не подтверждена'
+            }}</span
+          >
+          @if (!locked()) {
+            <button
+              tuiButton
+              appearance="secondary"
+              size="s"
+              type="button"
+              [disabled]="blocked()"
+              (click)="ready()"
+            >
+              <app-product-icon [name]="reference.ready ? 'x' : 'check'" />
+              {{ reference.ready ? 'Снять готовность эталона' : 'Эталон готов' }}
+            </button>
+          }
+        </app-file-workspace>
+      } @else {
+        <section class="reference-start">
+          <h2>Эталонное решение</h2>
+          <p>Эталон создаётся из материалов и недоступен участникам.</p>
+          <p>Сначала добавьте хотя бы один файл в материалы.</p>
+          <button
+            tuiButton
+            appearance="accent"
+            type="button"
+            [disabled]="blocked() || locked()"
+            (click)="initializeReference()"
+          >
+            <app-product-icon name="plus" />
+            Создать эталон
+          </button>
+        </section>
+      }
+    </div>
+    <ng-template
+      [tuiDialog]="confirming() === 'publish'"
+      [tuiDialogOptions]="publishDialogOptions"
+      (tuiDialogChange)="onPublishDialogChange($event)"
+    >
+      <div cdkTrapFocus class="publish-dialog" [attr.aria-busy]="publishPreparing() || busy()">
+        <p>
+          Участникам станут доступны описание и сохранённые материалы. Эталон останется приватным.
+          После начала первого решения содержание кейса нельзя будет изменить.
+        </p>
+        @if (publishPreparing() || busy()) {
+          <app-loading-state
+            tuiAutoFocus
+            tabindex="0"
+            label="Сохраняем изменения и публикуем кейс…"
+          />
+        }
+        @if (publishError() || error() || syncError()) {
+          <div class="message error" role="alert">
+            @if (publishError()) {
+              <p>{{ publishError() }}</p>
+            }
+            @if (error()) {
+              <p>{{ error() }}</p>
+            }
+            @if (syncError()) {
+              <p>{{ syncError() }}</p>
+            }
+          </div>
+          @if (retrying() || (error() && formDirty())) {
+            <p>Результат операции пока не подтверждён. Повторите её с теми же данными.</p>
+            <button
+              tuiButton
+              appearance="secondary"
+              type="button"
+              [disabled]="publishPreparing() || busy()"
+              (click)="retryPublication()"
+            >
+              Повторить операцию
+            </button>
+          } @else if (error() || syncError()) {
+            <button
+              tuiButton
+              appearance="secondary"
+              type="button"
+              [disabled]="publishPreparing() || working()"
+              (click)="refresh()"
+            >
+              Обновить состояние кейса
+            </button>
+          }
+          @if (canClosePublish()) {
+            <a
+              [routerLink]="[]"
+              [queryParams]="{ section: publicationSection() }"
+              (click)="closePublish()"
+            >
+              Вернуться к описанию или эталону
+            </a>
+          }
+        }
+        <div class="actions">
+          <button
+            #publishCancel
+            tuiButton
+            tuiAutoFocus
+            appearance="secondary"
+            type="button"
+            [disabled]="!canClosePublish()"
+            (click)="closePublish()"
+          >
+            Отмена
+          </button>
+          <button
+            tuiButton
+            appearance="accent"
+            type="button"
+            [disabled]="publishPreparing() || !!publicationBlocker()"
+            (click)="publish()"
+          >
+            Подтвердить публикацию
+          </button>
+        </div>
+      </div>
+    </ng-template>
+    <footer class="case-actions">
+      @if (current.status !== 'archived') {
+        <button
+          tuiButton
+          appearance="flat"
+          size="s"
+          type="button"
+          [disabled]="blocked() || unsettled()"
+          (click)="changeStatus('archived')"
+        >
+          <app-product-icon name="archive" />
+          Архивировать
+        </button>
+      } @else {
+        <button
+          tuiButton
+          appearance="secondary"
+          size="s"
+          type="button"
+          [disabled]="blocked() || unsettled()"
+          (click)="changeStatus('draft')"
+        >
+          <app-product-icon name="refresh" />
+          Восстановить черновик
+        </button>
+      }
+      @if (!locked()) {
+        <button
+          tuiButton
+          appearance="flat"
+          size="s"
+          type="button"
+          [disabled]="blocked() || unsettled()"
+          (click)="confirming.set('delete')"
+        >
+          <app-product-icon name="trash" />
+          Удалить кейс
+        </button>
+      }
+    </footer>
+    @if (confirming() === 'delete') {
+      <section class="confirmation" aria-label="Подтверждение удаления">
+        <h2>Удалить кейс?</h2>
+        <p>Кейс «{{ current.name }}» будет удалён.</p>
+        <div class="actions">
+          <button
+            tuiButton
+            appearance="secondary"
+            type="button"
+            [disabled]="blocked() || unsettled()"
+            (click)="remove()"
+          >
+            Подтвердить удаление
+          </button>
+          <button
+            tuiButton
+            appearance="flat"
+            type="button"
+            [disabled]="busy() || retrying()"
+            (click)="confirming.set(null)"
+          >
+            Отменить удаление
+          </button>
+        </div>
+      </section>
+    }
+  }
+}

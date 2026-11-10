@@ -1,0 +1,35 @@
+:host {
+  display: block;
+  min-width: 0;
+}
+
+.back-link {
+  display: inline-block;
+  margin-bottom: 10px;
+  padding: 8px 0;
+  color: var(--prodguild-text-secondary);
+  font-size: 12px;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+
+.back-link:focus-visible {
+  outline: 2px solid var(--prodguild-text);
+  outline-offset: 4px;
+}
+
+.not-found {
+  max-width: 650px;
+  padding: 32px;
+  border-radius: var(--prodguild-radius-lg);
+  background: var(--prodguild-surface-raised);
+  overflow-wrap: anywhere;
+}
+
+.not-found h1 {
+  margin: 0 0 16px;
+}
+
+.not-found p {
+  color: var(--prodguild-text-secondary);
+}

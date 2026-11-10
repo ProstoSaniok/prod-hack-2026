@@ -1,0 +1,51 @@
+:host {
+  display: block;
+  min-width: 0;
+  border-radius: var(--prodguild-radius-lg);
+  background: var(--prodguild-surface-raised);
+}
+
+.heading {
+  display: flex;
+  width: 100%;
+  height: auto;
+  min-height: 76px;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 20px 24px;
+  border-radius: var(--prodguild-radius-lg);
+  font: inherit;
+  font-size: 19px;
+  font-weight: 700;
+  white-space: normal;
+  text-align: start;
+}
+
+.heading:focus-visible {
+  outline: 3px solid var(--ink);
+  outline-offset: 3px;
+}
+
+svg {
+  width: 24px;
+  height: 24px;
+  flex: 0 0 24px;
+  fill: none;
+  stroke: currentcolor;
+  stroke-width: 2;
+  transition: transform 160ms ease;
+}
+
+.is-open {
+  transform: rotate(180deg);
+}
+
+.content {
+  padding: 0 24px 24px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  svg {
+    transition: none;
+  }
+}

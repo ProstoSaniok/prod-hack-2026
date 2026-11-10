@@ -1,0 +1,360 @@
+<div class="workbench">
+  <header class="workspace-heading">
+    <div class="workspace-title">
+      <span class="workspace-icon" aria-hidden="true"
+        ><svg viewBox="0 0 24 24"><path d="m9 6-6 6 6 6m6-12 6 6-6 6" /></svg
+      ></span>
+      <div>
+        <h1>{{ study().title }}</h1>
+        <p>
+          {{ study().category }} <span aria-hidden="true">/</span>
+          <span class="status-label">{{ statusLabel() }}</span>
+        </p>
+      </div>
+    </div>
+    <div class="workspace-actions">
+      <app-repository-clone [repository]="cloneRepository()" />
+      @if (!loading() && !readOnly()) {
+        <button
+          class="send-button"
+          tuiButton
+          appearance="accent"
+          size="s"
+          type="button"
+          [disabled]="busy()"
+          (click)="requestSubmit()"
+        >
+          Отправить на проверку<svg viewBox="0 0 20 20" aria-hidden="true">
+            <path d="M4 10h12m-5-5 5 5-5 5" />
+          </svg>
+        </button>
+      }
+    </div>
+  </header>
+  @if (repository.storageNotice()) {
+    <p class="storage-warning" role="status">{{ repository.storageNotice() }}</p>
+  }
+  @if (error()) {
+    <div class="error-notice" role="alert">
+      <p>{{ error() }}</p>
+      @if (conflict()) {
+        <button
+          tuiButton
+          appearance="secondary"
+          size="s"
+          type="button"
+          [disabled]="busy()"
+          (click)="reloadFile()"
+        >
+          Загрузить актуальную версию
+        </button>
+      }
+    </div>
+  }
+  <p class="action-notice" role="status">{{ notice() }}</p>
+  @if (loading()) {
+    <p class="loading" role="status">Открываем решение…</p>
+  } @else if (project(); as current) {
+    <app-split-pane
+      class="workspace-grid"
+      primaryId="workspace-information"
+      secondaryId="workspace-editor"
+      (compactChange)="compact.set($event)"
+    >
+      <section
+        splitStart
+        id="workspace-information"
+        class="navigator"
+        [class.compact]="compact()"
+        aria-label="Навигатор решения"
+      >
+        <nav
+          class="panel-tabs"
+          role="tablist"
+          tabindex="-1"
+          aria-label="Разделы решения"
+          (keydown)="navigatePanels($event)"
+        >
+          <button
+            id="solution-tab-conditions"
+            role="tab"
+            type="button"
+            [attr.aria-selected]="panel() === 'conditions'"
+            [tabIndex]="panel() === 'conditions' ? 0 : -1"
+            (click)="setPanel('conditions')"
+            aria-controls="workspace-panel"
+          >
+            Задание
+          </button>
+          <button
+            id="solution-tab-files"
+            role="tab"
+            type="button"
+            [attr.aria-selected]="panel() === 'files'"
+            [tabIndex]="panel() === 'files' ? 0 : -1"
+            (click)="setPanel('files')"
+            aria-controls="workspace-panel"
+          >
+            Файлы
+          </button>
+          <button
+            id="solution-tab-review"
+            role="tab"
+            type="button"
+            [attr.aria-selected]="panel() === 'review'"
+            [tabIndex]="panel() === 'review' ? 0 : -1"
+            (click)="setPanel('review')"
+            aria-controls="workspace-panel"
+          >
+            Результаты
+          </button>
+        </nav>
+        <button
+          class="panel-toggle"
+          type="button"
+          [attr.aria-expanded]="panelExpanded()"
+          aria-controls="workspace-panel"
+          (click)="panelExpanded.set(!panelExpanded())"
+        >
+          {{ panelExpanded() ? 'Свернуть панель' : 'Развернуть панель' }}
+        </button>
+        <div
+          id="workspace-panel"
+          role="tabpanel"
+          [attr.aria-labelledby]="'solution-tab-' + panel()"
+          [hidden]="compact() && !panelExpanded()"
+          class="panel-body"
+        >
+          @switch (panel()) {
+            @case ('conditions') {
+              <h2>Условия кейса</h2>
+              <p>{{ study().context }}</p>
+              <fieldset>
+                <legend>Что нужно сделать</legend>
+                @for (task of study().tasks; track $index) {
+                  <label class="task"
+                    ><input
+                      type="checkbox"
+                      tuiCheckbox
+                      [ngModel]="steps().includes($index)"
+                      [ngModelOptions]="{ standalone: true }"
+                      [disabled]="readOnly()"
+                      (ngModelChange)="stepChange.emit({ index: $index, checked: $event })"
+                    /><span>{{ task }}</span></label
+                  >
+                }
+              </fieldset>
+              <h3>Критерии</h3>
+              <ul class="criteria">
+                @for (criterion of study().criteria; track criterion) {
+                  <li>{{ criterion }}</li>
+                }
+              </ul>
+              <h3>Материалы</h3>
+              <p>{{ study().material }}</p>
+              <button
+                tuiButton
+                appearance="secondary"
+                size="m"
+                type="button"
+                (click)="setPanel('files')"
+              >
+                Открыть файлы
+              </button>
+            }
+            @case ('files') {
+              <div class="section-heading">
+                <h2>Моё решение</h2>
+                <span>{{ current.files.length }}</span>
+              </div>
+              @if (!readOnly()) {
+                <div class="file-tools">
+                  <button
+                    tuiButton
+                    appearance="flat"
+                    size="s"
+                    type="button"
+                    [disabled]="busy()"
+                    (click)="creating.set(true)"
+                    aria-label="Добавить файл"
+                  >
+                    <svg viewBox="0 0 20 20" aria-hidden="true">
+                      <path d="M4 2h8l4 4v12H4zM12 2v5h4M10 9v6m-3-3h6" /></svg
+                    >Новый
+                  </button>
+                  <button
+                    tuiButton
+                    appearance="flat"
+                    size="s"
+                    type="button"
+                    [disabled]="busy()"
+                    (click)="uploadInput.click()"
+                  >
+                    <svg viewBox="0 0 20 20" aria-hidden="true">
+                      <path d="M10 14V3m-4 4 4-4 4 4M3 13v4h14v-4" /></svg
+                    >Загрузить файлы
+                  </button>
+                  <button
+                    tuiButton
+                    appearance="flat"
+                    size="s"
+                    type="button"
+                    [disabled]="busy()"
+                    (click)="folderInput.click()"
+                  >
+                    Загрузить папку
+                  </button>
+                  <input
+                    #uploadInput
+                    type="file"
+                    multiple
+                    hidden
+                    aria-label="Загрузка файлов"
+                    (change)="upload(uploadInput)"
+                  />
+                  <input
+                    #folderInput
+                    type="file"
+                    multiple
+                    webkitdirectory
+                    hidden
+                    aria-label="Загрузка папки"
+                    (change)="upload(folderInput)"
+                  />
+                </div>
+              }
+              <app-file-tree
+                [files]="files()"
+                [selected]="material() ? '' : selectedPath()"
+                label="Файлы решения"
+                (fileSelect)="selectFile($event)"
+              />
+              @if (!readOnly()) {
+                @if (creating()) {
+                  <div class="create-file">
+                    <tui-textfield [tuiTextfieldCleaner]="false"
+                      ><label tuiLabel>Путь нового файла</label
+                      ><input
+                        tuiTextfield
+                        [formControl]="newPath"
+                        placeholder="src/main.ts"
+                        (keydown.enter)="createFile()"
+                    /></tui-textfield>
+                    <p class="hint">Папки создаются из пути: src/main.ts</p>
+                    <div class="inline-actions">
+                      <button
+                        tuiButton
+                        appearance="accent"
+                        size="s"
+                        type="button"
+                        [disabled]="busy()"
+                        (click)="createFile()"
+                      >
+                        Создать файл</button
+                      ><button
+                        tuiButton
+                        appearance="flat"
+                        size="s"
+                        type="button"
+                        (click)="creating.set(false)"
+                      >
+                        Отмена
+                      </button>
+                    </div>
+                  </div>
+                }
+              }
+              <h3>Материалы кейса</h3>
+              <p class="hint">Только для чтения</p>
+              <app-file-tree
+                [files]="materials()"
+                [selected]="material() ? selectedPath() : ''"
+                label="Материалы кейса"
+                (fileSelect)="selectFile($event, true)"
+              />
+            }
+            @case ('review') {
+              <h2>
+                {{
+                  current.status === 'submitted'
+                    ? 'Решение на проверке'
+                    : current.status === 'completed'
+                      ? 'Результат'
+                      : 'Отправка решения'
+                }}
+              </h2>
+              @if (current.snapshot; as snapshot) {
+                <p>Отправлено {{ snapshot.submittedAt | date: 'dd.MM.yyyy, HH:mm' }}.</p>
+                <p>
+                  Зафиксировано файлов: {{ snapshot.files.length }}. Отправленный снимок доступен
+                  справа только для чтения.
+                </p>
+                <p class="hint">
+                  Это демонстрационная отправка. Проверка на сервере не запускается.
+                </p>
+              } @else if (current.status === 'completed') {
+                <p>Сохранённое ранее решение. Доступно только для чтения.</p>
+              } @else {
+                <p>Сохраните файлы и отправьте готовое решение. Чек-лист поможет проверить себя.</p>
+              }
+              @if (current.feedback; as feedback) {
+                <div class="feedback">
+                  <p class="example-label">Подготовленный пример обратной связи</p>
+                  <strong class="score">{{ feedback.score }} / 100</strong>
+                  <p>
+                    {{ feedback.verdict === 'approved' ? 'Решение принято' : 'Нужны изменения' }}
+                  </p>
+                  <h3>Сильные стороны</h3>
+                  <p>{{ feedback.strengths }}</p>
+                  <h3>Что улучшить</h3>
+                  <p>{{ feedback.problems }}</p>
+                  <h3>Следующие шаги</h3>
+                  <p>{{ feedback.nextSteps }}</p>
+                </div>
+              }
+            }
+          }
+        </div>
+      </section>
+      <app-repository-editor
+        splitEnd
+        id="workspace-editor"
+        [class.compact]="compact()"
+        [scopeId]="current.id"
+        [files]="documents()"
+        [selectedId]="selectedId()"
+        [content]="text()"
+        [readOnly]="readOnly()"
+        [busy]="busy()"
+        [status]="saveStatus()"
+        (fileSelect)="selectDocument($event)"
+        (contentChange)="edit($event)"
+        (save)="save()"
+        (download)="download()"
+        (remove)="requestDelete()"
+        (create)="setPanel('files'); creating.set(true)"
+      />
+    </app-split-pane>
+  }
+</div>
+<p class="workspace-note">Деморежим · Изменения сохраняются в этом браузере. Код не выполняется.</p>
+<dialog #confirmationDialog aria-labelledby="confirmation-title" (cancel)="closeDialog()">
+  <h2 id="confirmation-title">
+    {{ confirmation() === 'submit' ? 'Отправить решение?' : 'Удалить файл?' }}
+  </h2>
+  @if (confirmation() === 'submit') {
+    <p>
+      В снимок войдут все файлы решения ({{ project()?.files?.length }}). После отправки
+      редактирование будет недоступно.
+    </p>
+  } @else {
+    <p>Файл «{{ selectedPath() }}» и его черновик будут удалены.</p>
+  }
+  <div class="dialog-actions">
+    <button tuiButton appearance="secondary" size="m" type="button" (click)="closeDialog()">
+      Отмена</button
+    ><button tuiButton appearance="accent" size="m" type="button" (click)="confirm()">
+      {{ confirmation() === 'submit' ? 'Подтвердить отправку' : 'Удалить файл' }}
+    </button>
+  </div>
+</dialog>

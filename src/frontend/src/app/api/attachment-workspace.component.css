@@ -1,0 +1,84 @@
+:host {
+  display: block;
+  min-width: 0;
+}
+
+[hidden] {
+  display: none !important;
+}
+
+section {
+  min-width: 0;
+}
+
+header,
+.actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-block: 12px;
+}
+
+h3 {
+  margin: 0 auto 0 0;
+  font-size: var(--prodguild-font-section);
+  font-weight: 500;
+}
+
+tui-textfield {
+  min-width: min(240px, 100%);
+  flex: 1;
+}
+
+.limits {
+  color: var(--prodguild-text-secondary);
+  font-size: var(--prodguild-font-caption);
+}
+
+.attachment-editor {
+  height: 400px;
+  min-width: 0;
+}
+
+app-repository-editor {
+  height: 100%;
+}
+
+[role='alert'] {
+  color: var(--tui-text-negative);
+  overflow-wrap: anywhere;
+}
+
+:host([data-code-maximize-target]) section {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  flex-direction: column;
+}
+
+:host([data-code-maximize-target]) .attachment-editor {
+  flex: 1 1 240px;
+  min-height: 240px;
+  height: auto;
+}
+
+:host-context([data-code-maximize-target]) {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+}
+
+:host-context([data-code-maximize-target]) section {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+}
+
+:host-context([data-code-maximize-target]) .attachment-editor {
+  flex: 1 1 240px;
+  min-height: 240px;
+  height: auto;
+}

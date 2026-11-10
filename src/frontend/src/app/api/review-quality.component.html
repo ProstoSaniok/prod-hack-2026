@@ -1,0 +1,210 @@
+@if (!result()) {
+  <button
+    tuiButton
+    appearance="secondary"
+    type="button"
+    [disabled]="busy()"
+    (click)="returnRequested.emit()"
+  >
+    Вернуть в очередь
+  </button>
+}
+<header class="page-heading">
+  <h2>Экспертная проверка ревью</h2>
+</header>
+@if (error()) {
+  <p role="alert">{{ error() }}</p>
+}
+@if (loading() || busy()) {
+  <app-loading-state
+    [label]="loading() ? 'Загружаем ревью для проверки…' : 'Сохраняем экспертную оценку…'"
+  />
+}
+@if (error() && !source()) {
+  <button tuiButton appearance="secondary" type="button" [disabled]="loading()" (click)="load()">
+    Повторить загрузку
+  </button>
+}
+@if (!source() && form.dirty) {
+  <section class="surface" aria-label="Несохранённое заключение эксперта">
+    <h3>Несохранённое заключение эксперта</h3>
+    <p>Текст сохранён на этой странице. Скопируйте его перед выходом.</p>
+    <p>
+      {{ decisionLabel(form.controls.decision.value) }} · Оценка качества:
+      {{ form.controls.score.value }} / 100
+    </p>
+    <label for="quality-feedback-recovery">Ваш приватный комментарий</label>
+    <textarea id="quality-feedback-recovery" [value]="form.controls.feedback.value" readonly>
+    </textarea>
+  </section>
+}
+@if (source(); as review) {
+  <section class="surface" aria-label="Задание">
+    <h2>{{ review.workspace.case.title }}</h2>
+    <p>{{ review.workspace.case.description }}</p>
+    <h3>Ожидаемый результат</h3>
+    <p>{{ review.workspace.case.expected_result }}</p>
+  </section>
+  <div class="quality-workspace" appWorkspaceMaximize #qualityWorkspace="workspaceMaximize">
+    <div class="maximize-toolbar">
+      <button
+        #expand
+        tuiButton
+        appearance="flat"
+        size="s"
+        type="button"
+        [attr.aria-expanded]="qualityWorkspace.expanded()"
+        [attr.aria-controls]="qualityWorkspace.id"
+        (click)="qualityWorkspace.toggle(expand)"
+      >
+        <app-product-icon [name]="qualityWorkspace.expanded() ? 'collapse' : 'expand'" />
+        {{ qualityWorkspace.expanded() ? 'Свернуть код' : 'Развернуть код' }}
+      </button>
+    </div>
+    @if (qualityWorkspace.expanded() && error()) {
+      <p role="alert">{{ error() }}</p>
+    }
+    <div class="file-view-switch" role="group" aria-label="Материалы экспертной проверки">
+      <button
+        tuiButton
+        size="s"
+        type="button"
+        [appearance]="fileView() === 'files' ? 'accent' : 'secondary'"
+        [attr.aria-pressed]="fileView() === 'files'"
+        (click)="fileView.set('files')"
+      >
+        Файлы решения
+      </button>
+      <button
+        tuiButton
+        size="s"
+        type="button"
+        [appearance]="fileView() === 'source-review' ? 'accent' : 'secondary'"
+        [attr.aria-pressed]="fileView() === 'source-review'"
+        (click)="fileView.set('source-review')"
+      >
+        Исходное ревью
+      </button>
+    </div>
+    <div class="quality-panels">
+      <div class="quality-files">
+        <section
+          class="file-surface"
+          aria-label="Файлы участника"
+          [hidden]="fileView() !== 'files'"
+        >
+          <app-snapshot-viewer
+            [id]="assignment().id"
+            resource="review-assignments"
+            [allowMaximize]="false"
+          />
+        </section>
+        <section
+          class="surface source-review"
+          aria-label="Исходное ревью"
+          [hidden]="fileView() !== 'source-review'"
+        >
+          <h2>Исходное ревью</h2>
+          <app-published-review [review]="review" [embedded]="true" [historical]="!!result()" />
+        </section>
+      </div>
+      <aside class="quality-assessment" aria-label="Заключение по ревью">
+        @if (result(); as assessment) {
+          <p role="status">
+            Экспертная оценка сохранена:
+            {{ assessment.decision === 'confirmed' ? 'Подтверждено' : 'Нужна доработка ревью' }}.
+          </p>
+          <p>Оценка качества ревью: {{ assessment.score }} / 100</p>
+          <h3>Приватный комментарий эксперта</h3>
+          <p>{{ assessment.feedback }}</p>
+          <p>Комментарий доступен ревьюеру и эксперту проверки. Автор решения его не увидит.</p>
+        } @else {
+          <form
+            class="surface assessment"
+            aria-label="Заключение эксперта"
+            [formGroup]="form"
+            (ngSubmit)="prepareAssessment()"
+          >
+            <h2>Качество ревью</h2>
+            <tui-textfield [tuiTextfieldCleaner]="false" [stringify]="decisionLabel">
+              <label tuiLabel for="quality-decision">Решение эксперта</label>
+              <select
+                tuiTextfield
+                id="quality-decision"
+                formControlName="decision"
+                [readOnly]="busy() || loading()"
+              ></select>
+              <tui-data-list *tuiTextfieldDropdown>
+                <button tuiOption type="button" value="confirmed">Подтвердить ревью</button>
+                <button tuiOption type="button" value="needs_revision">
+                  Вернуть ревью на доработку
+                </button>
+              </tui-data-list>
+            </tui-textfield>
+            <label for="quality-score">Оценка качества ревью</label
+            ><input
+              id="quality-score"
+              type="number"
+              min="0"
+              max="100"
+              formControlName="score"
+              [readOnly]="busy() || loading()"
+            />
+            <label for="quality-feedback">Комментарий эксперта</label
+            ><textarea
+              id="quality-feedback"
+              formControlName="feedback"
+              maxlength="6000"
+              [readOnly]="busy() || loading()"
+            ></textarea>
+            <p>Комментарий видят ревьюер и эксперт проверки. Автор решения его не увидит.</p>
+            <button
+              tuiButton
+              appearance="accent"
+              type="submit"
+              [disabled]="busy() || loading() || form.invalid"
+            >
+              Сохранить экспертное решение
+            </button>
+          </form>
+          @if (confirming()) {
+            <section class="confirmation" aria-label="Подтверждение публикации">
+              <h2>
+                {{
+                  form.controls.decision.value === 'confirmed'
+                    ? 'Подтвердить ревью?'
+                    : 'Вернуть на доработку?'
+                }}
+              </h2>
+              <p>
+                {{
+                  form.controls.decision.value === 'confirmed'
+                    ? 'Автор решения получит отзыв.'
+                    : 'Ревьюер получит замечания. Автор решения пока не увидит ревью.'
+                }}
+                Изменить оценку этой редакции будет нельзя.
+              </p>
+              <button
+                tuiButton
+                appearance="accent"
+                type="button"
+                [disabled]="busy() || loading() || form.invalid"
+                (click)="assess()"
+              >
+                Подтвердить экспертное решение</button
+              ><button
+                tuiButton
+                appearance="flat"
+                type="button"
+                [disabled]="busy()"
+                (click)="confirming.set(false)"
+              >
+                Отмена экспертного решения
+              </button>
+            </section>
+          }
+        }
+      </aside>
+    </div>
+  </div>
+}

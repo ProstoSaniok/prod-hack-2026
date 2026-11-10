@@ -1,0 +1,8 @@
+<div class="auth-layout">
+  <main>
+    @if (api.notice()) {
+      <p class="storage-notice" role="status">{{ api.notice() }}</p>
+    }
+    <router-outlet class="route-placeholder" />
+  </main>
+</div>

@@ -1,0 +1,68 @@
+<button
+  #cloneTrigger
+  tuiButton
+  type="button"
+  size="s"
+  appearance="secondary"
+  [tuiDropdown]="cloneMenu"
+  [(tuiDropdownOpen)]="open"
+  tuiDropdownAlign="right"
+  [attr.aria-expanded]="open()"
+  aria-haspopup="dialog"
+>
+  <svg viewBox="0 0 20 20" aria-hidden="true"><path d="m7 5-5 5 5 5m6-10 5 5-5 5" /></svg>Код<svg
+    class="chevron"
+    viewBox="0 0 20 20"
+    aria-hidden="true"
+  >
+    <path d="m6 8 4 4 4-4" />
+  </svg>
+</button>
+<ng-template #cloneMenu>
+  <section
+    class="clone-menu"
+    role="dialog"
+    tabindex="-1"
+    aria-label="Клонировать репозиторий"
+    (keydown.escape)="close()"
+  >
+    <h2>Клонировать репозиторий</h2>
+    <nav aria-label="Протокол клонирования">
+      <button type="button" [attr.aria-pressed]="protocol() === 'https'" (click)="select('https')">
+        HTTPS</button
+      ><button type="button" [attr.aria-pressed]="protocol() === 'ssh'" (click)="select('ssh')">
+        SSH
+      </button>
+    </nav>
+    <div class="clone-field">
+      <input
+        type="text"
+        #cloneUrl
+        readonly
+        [value]="url()"
+        aria-label="Адрес репозитория"
+        (focus)="cloneUrl.select()"
+      /><button
+        tuiButton
+        appearance="flat"
+        size="s"
+        type="button"
+        (click)="copy()"
+        aria-label="Скопировать адрес репозитория"
+      >
+        <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M7 7h10v10H7zM13 7V3H3v10h4" /></svg>
+      </button>
+    </div>
+    <p>
+      {{
+        protocol() === 'https'
+          ? 'Используйте этот URL для git clone в терминале.'
+          : 'Для подключения по SSH добавьте ключ в свой аккаунт Gitea.'
+      }}
+    </p>
+    @if (repository().mock) {
+      <p class="mock-note">Демоадрес Gitea · подключение к серверу пока не настроено.</p>
+    }
+    <p class="copy-status" role="status">{{ status() }}</p>
+  </section>
+</ng-template>
