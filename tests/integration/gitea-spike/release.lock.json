@@ -1,0 +1,16 @@
+{
+  "local_only": true,
+  "source_repository": "go-gitea/gitea",
+  "release": "28.1.0",
+  "tag": "docker.gitea.com/gitea:28.1.0",
+  "image": "docker.gitea.com/gitea@sha256:f505a0d3a41323b786e05942fc7a4075e07ae7c169fd9485649aa55ee543a21a",
+  "linux_arm64_manifest": "sha256:1de3b99b9e3e080ba73b4028324b425274ad00d676803603f7f19efdc416045b",
+  "published_at": "2026-10-06T20:14:45Z",
+  "verified_on": "2026-10-16",
+  "metadata_url": "https://api.github.com/repos/go-gitea/gitea/releases/latest",
+  "release_url": "https://github.com/go-gitea/gitea/releases/tag/v28.1.0",
+  "registry_manifest_url": "https://docker.gitea.com/v2/gitea/manifests/28.1.0",
+  "security_support_url": "https://github.com/go-gitea/gitea/blob/v28.1.0/SECURITY.md#supported-versions",
+  "official_install_url": "https://docs.gitea.com/installation/install-with-docker/",
+  "production_mirror_approved": false
+}

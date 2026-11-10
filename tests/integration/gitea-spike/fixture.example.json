@@ -1,0 +1,33 @@
+{
+  "schema_version": 1,
+  "origin": null,
+  "release": null,
+  "image": null,
+  "namespace": null,
+  "accounts": {
+    "backend": {"username": null, "id": null, "token_env": "PRODGUILD_T01_BACKEND_TOKEN"},
+    "organizer": {"username": null, "id": null, "token_env": "PRODGUILD_T01_ORGANIZER_TOKEN"},
+    "student_a": {"username": null, "id": null, "token_env": "PRODGUILD_T01_STUDENT_A_TOKEN"},
+    "student_b": {"username": null, "id": null, "token_env": "PRODGUILD_T01_STUDENT_B_TOKEN"},
+    "reviewer": {"username": null, "id": null, "token_env": "PRODGUILD_T01_REVIEWER_TOKEN"},
+    "expert": {"username": null, "id": null, "token_env": "PRODGUILD_T01_EXPERT_TOKEN"}
+  },
+  "repositories": {
+    "starter": {"name": "starter", "id": null, "marker": null},
+    "reference": {"name": "reference", "id": null, "marker": null},
+    "draft_case": {"name": "draft-case", "id": null, "marker": null},
+    "solution_a": {"name": "solution-a", "id": null, "marker": null},
+    "solution_b": {"name": "solution-b", "id": null, "marker": null},
+    "pending": {"name": "pending", "id": null, "marker": null}
+  },
+  "solutions": {
+    "student_a": {
+      "pull": null, "review": null, "submitted_sha": null, "working_sha": null,
+      "working_branch": "work", "retained_branch": "retained-submission-a"
+    },
+    "student_b": {
+      "pull": null, "review": null, "submitted_sha": null, "working_sha": null,
+      "working_branch": "work", "retained_branch": "retained-submission-b"
+    }
+  }
+}

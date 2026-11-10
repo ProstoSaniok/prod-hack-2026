@@ -1,0 +1,682 @@
+{
+  "schema_version": 1,
+  "scope": "authorized-disposable-local-gitea-only",
+  "observed_at_utc": "2026-10-16T22:46:50.944586+00:00",
+  "release": "28.1.0",
+  "image": "docker.gitea.com/gitea@sha256:f505a0d3a41323b786e05942fc7a4075e07ae7c169fd9485649aa55ee543a21a",
+  "image_tag": "docker.gitea.com/gitea:28.1.0",
+  "database": "SQLite (ACL fixture only; production PostgreSQL compatibility NOT proven)",
+  "http": "literal host loopback only; not production TLS proof",
+  "ssh": "disabled/unpublished, not tested",
+  "run_id": "prodguild-t01-lab-d1ef16ed4a",
+  "rows": [
+    {
+      "id": "release.runtime_and_isolation_preflight",
+      "status": "passed",
+      "version": "28.1.0",
+      "image_id": "sha256:2eb9b8e174877a3d5e1b84fdf58f5b7cca94516403b405080bd0475946cc756a",
+      "architecture": "arm64",
+      "separate_non_admin_actors": 6,
+      "loopback_only": true,
+      "sqlite_actual_database": true,
+      "local_unix_daemon_pinned": true,
+      "running_image_matches_pulled_digest": true
+    },
+    {
+      "id": "acl.api.student_a.reference",
+      "status": "passed",
+      "surfaces": 3,
+      "http_statuses": [
+        404
+      ]
+    },
+    {
+      "id": "acl.api.student_b.reference",
+      "status": "passed",
+      "surfaces": 3,
+      "http_statuses": [
+        404
+      ]
+    },
+    {
+      "id": "acl.api.reviewer.reference",
+      "status": "passed",
+      "surfaces": 3,
+      "http_statuses": [
+        404
+      ]
+    },
+    {
+      "id": "acl.api.expert.reference",
+      "status": "passed",
+      "surfaces": 3,
+      "http_statuses": [
+        404
+      ]
+    },
+    {
+      "id": "acl.api.student_a.draft_case",
+      "status": "passed",
+      "surfaces": 3,
+      "http_statuses": [
+        404
+      ]
+    },
+    {
+      "id": "acl.api.student_b.draft_case",
+      "status": "passed",
+      "surfaces": 3,
+      "http_statuses": [
+        404
+      ]
+    },
+    {
+      "id": "acl.api.reviewer.draft_case",
+      "status": "passed",
+      "surfaces": 3,
+      "http_statuses": [
+        404
+      ]
+    },
+    {
+      "id": "acl.api.expert.draft_case",
+      "status": "passed",
+      "surfaces": 3,
+      "http_statuses": [
+        404
+      ]
+    },
+    {
+      "id": "acl.api.student_b.solution_a",
+      "status": "passed",
+      "surfaces": 7,
+      "http_statuses": [
+        404
+      ]
+    },
+    {
+      "id": "acl.api.organizer.solution_a",
+      "status": "passed",
+      "surfaces": 7,
+      "http_statuses": [
+        404
+      ]
+    },
+    {
+      "id": "acl.api.student_a.solution_b",
+      "status": "passed",
+      "surfaces": 7,
+      "http_statuses": [
+        404
+      ]
+    },
+    {
+      "id": "acl.api.organizer.solution_b",
+      "status": "passed",
+      "surfaces": 7,
+      "http_statuses": [
+        404
+      ]
+    },
+    {
+      "id": "acl.api.student_a.pending",
+      "status": "passed",
+      "surfaces": 3,
+      "http_statuses": [
+        404
+      ]
+    },
+    {
+      "id": "acl.api.student_b.pending",
+      "status": "passed",
+      "surfaces": 3,
+      "http_statuses": [
+        404
+      ]
+    },
+    {
+      "id": "acl.api.organizer.pending",
+      "status": "passed",
+      "surfaces": 3,
+      "http_statuses": [
+        404
+      ]
+    },
+    {
+      "id": "acl.api.reviewer.pending",
+      "status": "passed",
+      "surfaces": 3,
+      "http_statuses": [
+        404
+      ]
+    },
+    {
+      "id": "acl.api.expert.pending",
+      "status": "passed",
+      "surfaces": 3,
+      "http_statuses": [
+        404
+      ]
+    },
+    {
+      "id": "acl.web.student_a.reference",
+      "status": "passed",
+      "surfaces": 4,
+      "http_statuses": [
+        404
+      ]
+    },
+    {
+      "id": "acl.clone.student_a.reference",
+      "status": "passed",
+      "git_exit": 128,
+      "denial_classification": "git-repository-not-found-exact-repository",
+      "positive_controls": "same-account-before-and-after"
+    },
+    {
+      "id": "acl.web.student_a.draft_case",
+      "status": "passed",
+      "surfaces": 4,
+      "http_statuses": [
+        404
+      ]
+    },
+    {
+      "id": "acl.clone.student_a.draft_case",
+      "status": "passed",
+      "git_exit": 128,
+      "denial_classification": "git-repository-not-found-exact-repository",
+      "positive_controls": "same-account-before-and-after"
+    },
+    {
+      "id": "acl.web.student_a.pending",
+      "status": "passed",
+      "surfaces": 4,
+      "http_statuses": [
+        404
+      ]
+    },
+    {
+      "id": "acl.clone.student_a.pending",
+      "status": "passed",
+      "git_exit": 128,
+      "denial_classification": "git-repository-not-found-exact-repository",
+      "positive_controls": "same-account-before-and-after"
+    },
+    {
+      "id": "acl.web.student_a.solution_b",
+      "status": "passed",
+      "surfaces": 5,
+      "http_statuses": [
+        404
+      ]
+    },
+    {
+      "id": "acl.clone.student_a.solution_b",
+      "status": "passed",
+      "git_exit": 128,
+      "denial_classification": "git-repository-not-found-exact-repository",
+      "positive_controls": "same-account-before-and-after"
+    },
+    {
+      "id": "acl.web.student_b.reference",
+      "status": "passed",
+      "surfaces": 4,
+      "http_statuses": [
+        404
+      ]
+    },
+    {
+      "id": "acl.clone.student_b.reference",
+      "status": "passed",
+      "git_exit": 128,
+      "denial_classification": "git-repository-not-found-exact-repository",
+      "positive_controls": "same-account-before-and-after"
+    },
+    {
+      "id": "acl.web.student_b.draft_case",
+      "status": "passed",
+      "surfaces": 4,
+      "http_statuses": [
+        404
+      ]
+    },
+    {
+      "id": "acl.clone.student_b.draft_case",
+      "status": "passed",
+      "git_exit": 128,
+      "denial_classification": "git-repository-not-found-exact-repository",
+      "positive_controls": "same-account-before-and-after"
+    },
+    {
+      "id": "acl.web.student_b.pending",
+      "status": "passed",
+      "surfaces": 4,
+      "http_statuses": [
+        404
+      ]
+    },
+    {
+      "id": "acl.clone.student_b.pending",
+      "status": "passed",
+      "git_exit": 128,
+      "denial_classification": "git-repository-not-found-exact-repository",
+      "positive_controls": "same-account-before-and-after"
+    },
+    {
+      "id": "acl.web.student_b.solution_a",
+      "status": "passed",
+      "surfaces": 5,
+      "http_statuses": [
+        404
+      ]
+    },
+    {
+      "id": "acl.clone.student_b.solution_a",
+      "status": "passed",
+      "git_exit": 128,
+      "denial_classification": "git-repository-not-found-exact-repository",
+      "positive_controls": "same-account-before-and-after"
+    },
+    {
+      "id": "acl.web.organizer.pending",
+      "status": "passed",
+      "surfaces": 4,
+      "http_statuses": [
+        404
+      ]
+    },
+    {
+      "id": "acl.clone.organizer.pending",
+      "status": "passed",
+      "git_exit": 128,
+      "denial_classification": "git-repository-not-found-exact-repository",
+      "positive_controls": "same-account-before-and-after"
+    },
+    {
+      "id": "acl.web.organizer.solution_a",
+      "status": "passed",
+      "surfaces": 5,
+      "http_statuses": [
+        404
+      ]
+    },
+    {
+      "id": "acl.clone.organizer.solution_a",
+      "status": "passed",
+      "git_exit": 128,
+      "denial_classification": "git-repository-not-found-exact-repository",
+      "positive_controls": "same-account-before-and-after"
+    },
+    {
+      "id": "acl.web.organizer.solution_b",
+      "status": "passed",
+      "surfaces": 5,
+      "http_statuses": [
+        404
+      ]
+    },
+    {
+      "id": "acl.clone.organizer.solution_b",
+      "status": "passed",
+      "git_exit": 128,
+      "denial_classification": "git-repository-not-found-exact-repository",
+      "positive_controls": "same-account-before-and-after"
+    },
+    {
+      "id": "acl.web.reviewer.reference",
+      "status": "passed",
+      "surfaces": 4,
+      "http_statuses": [
+        404
+      ]
+    },
+    {
+      "id": "acl.clone.reviewer.reference",
+      "status": "passed",
+      "git_exit": 128,
+      "denial_classification": "git-repository-not-found-exact-repository",
+      "positive_controls": "same-account-before-and-after"
+    },
+    {
+      "id": "acl.web.reviewer.draft_case",
+      "status": "passed",
+      "surfaces": 4,
+      "http_statuses": [
+        404
+      ]
+    },
+    {
+      "id": "acl.clone.reviewer.draft_case",
+      "status": "passed",
+      "git_exit": 128,
+      "denial_classification": "git-repository-not-found-exact-repository",
+      "positive_controls": "same-account-before-and-after"
+    },
+    {
+      "id": "acl.web.reviewer.pending",
+      "status": "passed",
+      "surfaces": 4,
+      "http_statuses": [
+        404
+      ]
+    },
+    {
+      "id": "acl.clone.reviewer.pending",
+      "status": "passed",
+      "git_exit": 128,
+      "denial_classification": "git-repository-not-found-exact-repository",
+      "positive_controls": "same-account-before-and-after"
+    },
+    {
+      "id": "acl.web.expert.reference",
+      "status": "passed",
+      "surfaces": 4,
+      "http_statuses": [
+        404
+      ]
+    },
+    {
+      "id": "acl.clone.expert.reference",
+      "status": "passed",
+      "git_exit": 128,
+      "denial_classification": "git-repository-not-found-exact-repository",
+      "positive_controls": "same-account-before-and-after"
+    },
+    {
+      "id": "acl.web.expert.draft_case",
+      "status": "passed",
+      "surfaces": 4,
+      "http_statuses": [
+        404
+      ]
+    },
+    {
+      "id": "acl.clone.expert.draft_case",
+      "status": "passed",
+      "git_exit": 128,
+      "denial_classification": "git-repository-not-found-exact-repository",
+      "positive_controls": "same-account-before-and-after"
+    },
+    {
+      "id": "acl.web.expert.pending",
+      "status": "passed",
+      "surfaces": 4,
+      "http_statuses": [
+        404
+      ]
+    },
+    {
+      "id": "acl.clone.expert.pending",
+      "status": "passed",
+      "git_exit": 128,
+      "denial_classification": "git-repository-not-found-exact-repository",
+      "positive_controls": "same-account-before-and-after"
+    },
+    {
+      "id": "links.authenticated_repo_pr_and_http_clone",
+      "status": "passed",
+      "authenticated_link_and_clone_controls": [
+        "student_a:solution_a",
+        "student_b:solution_b",
+        "reviewer:solution_a",
+        "expert:solution_a",
+        "organizer:reference"
+      ],
+      "credential_free_urls": true
+    },
+    {
+      "id": "refs.native_api_merge_and_rule_protection",
+      "status": "failed",
+      "code": "protected_native_write_not_denied"
+    },
+    {
+      "id": "refs.authenticated_web_edit_and_delete",
+      "status": "passed",
+      "cookie_authenticated_edit_and_delete_positive_controls": true,
+      "protected_base_head_edit_delete_statuses": [
+        400,
+        400,
+        400,
+        400
+      ]
+    },
+    {
+      "id": "privacy.discovery_known_sha_and_anonymous",
+      "status": "passed",
+      "student_api_list_search_web_explore": 6,
+      "peer_known_commit_denials": 2,
+      "anonymous_api_web_denials": 10,
+      "anonymous_web_login_redirects_are_authentication_gate_only": true
+    },
+    {
+      "id": "freeze.starter_reference_and_no_shared_solution_merge",
+      "status": "passed",
+      "frozen_resources": 3,
+      "shared_starter_prs_disabled": true,
+      "native_denial_classifications": [
+        "gitea-write-acl-exact-repository-ref",
+        "gitea-write-acl-exact-repository-ref",
+        "gitea-write-acl-exact-repository-ref"
+      ]
+    },
+    {
+      "id": "files.actual_concurrent_stale_blob_race",
+      "status": "passed",
+      "concurrent_statuses": [
+        200,
+        403
+      ],
+      "sequential_stale_status": 422,
+      "adapter_requirement": "translate verified blob/ref conflict to409; do not classify every upstream403 as ACL",
+      "database": "real Gitea SQLite/Git, not application PostgreSQL"
+    },
+    {
+      "id": "authority.incidental_annotations_cannot_edit_backend_projection",
+      "status": "passed",
+      "incidental_comment_allowed": true,
+      "incidental_comment_id": 7,
+      "backend_projection_unchanged": true,
+      "application_grade_grants": "not implemented/tested here; PostgreSQL authoritative, no Git-comment ingestion"
+    },
+    {
+      "id": "reviews.pinned_old_new_positions_and_file_fallback",
+      "status": "passed",
+      "review_id": 3,
+      "inline_comments": 2,
+      "old_new_file_line_coordinates": [
+        2,
+        2
+      ],
+      "published_file_comment_fallback": true,
+      "native_file_comment_support_claimed": false
+    },
+    {
+      "id": "reviews.native_invalid_positions_require_adapter_validation",
+      "status": "passed",
+      "observations": [
+        {
+          "case": "out_of_range",
+          "native_status": 200,
+          "has_hunk": false
+        },
+        {
+          "case": "unchanged_file",
+          "native_status": 200,
+          "has_hunk": true
+        },
+        {
+          "case": "zero_coordinates",
+          "native_status": 200,
+          "has_hunk": false
+        },
+        {
+          "case": "deleted_old_line",
+          "native_status": 200,
+          "has_hunk": true
+        },
+        {
+          "case": "context_new_line",
+          "native_status": 200,
+          "has_hunk": true
+        }
+      ],
+      "adapter_requirement": "reject invalid/non-diff coordinates before I/O; native acceptance is not validation",
+      "file_level_policy": "zero coordinates accepted without hunk; use explicit published general-comment fallback"
+    },
+    {
+      "id": "files.binary_api_and_web_roundtrip",
+      "status": "passed",
+      "bytes": 24,
+      "sha256": "e3a65f2c2ea49e87be4f3a98c0ebe5c39828c0c282845ced5622202e1536b745",
+      "api_base64_and_web_raw_exact": true,
+      "application_download_headers": "contract only; application route not implemented here"
+    },
+    {
+      "id": "privacy.full_reachable_git_objects_and_pending_api_absence",
+      "status": "passed",
+      "reachable_blobs_scanned": 18,
+      "all_advertised_refs_fetched": true,
+      "known_peer_sha_fetches_denied": 2,
+      "native_denial_classifications": [
+        "git-repository-not-found-exact-repository",
+        "git-repository-not-found-exact-repository"
+      ],
+      "student_api_bodies_scanned": 20,
+      "actor_forbidden_canaries_absent_in_inspected_bodies": true,
+      "body_scan_encodings": "raw/UTF text, JSON keys/strings, diff/blob line payloads, four nested base64 layers",
+      "pending_application_drafts": "PostgreSQL-only contract; no learner-repo projection performed"
+    },
+    {
+      "id": "topology.private_fork_shared_upstream_rejected",
+      "status": "passed",
+      "private_fork_inherited": true,
+      "direct_peer_fork_status": 404,
+      "shared_upstream_peer_pr_diff_status": 200,
+      "observed_peer_solution_disclosure": true,
+      "decision": "reject shared-upstream PRs; use isolated per-project same-repository PRs"
+    },
+    {
+      "id": "recovery.actual_response_loss_and_native_key_nondedup",
+      "status": "passed",
+      "actual_response_loss_reconciliations": [
+        {
+          "kind": "repository",
+          "upstream_status": 201,
+          "recovered_id": 10,
+          "matches": 1,
+          "blind_post_retry": false
+        },
+        {
+          "kind": "pull_request",
+          "upstream_status": 201,
+          "recovered_id": 4,
+          "matches": 1,
+          "blind_post_retry": false
+        },
+        {
+          "kind": "review",
+          "upstream_status": 200,
+          "recovered_id": 9,
+          "matches": 1,
+          "blind_post_retry": false
+        }
+      ],
+      "same_native_request_key_created_distinct_comments": true
+    },
+    {
+      "id": "durability.actual_git_gc_and_container_restart",
+      "status": "passed",
+      "project_count": 2,
+      "expired_reflogs_and_git_gc_prune_now": true,
+      "container_restart": true,
+      "both_base_head_refs_retained": true,
+      "pinned_diff_hashes": {
+        "solution_a": "32d88f06d20e4e90ea5a19c1b44955057be5fbc61eb599f0c533e138bc4ec15e",
+        "solution_b": "8c47692ec064ba9854f606c2119b183e55e6e79692a6efebecf79afdca384823"
+      },
+      "recovered_objects_still_readable": 3
+    }
+  ],
+  "native_denial_policy": {
+    "version": "prodguild-t01-gitea28.1.0-exact-native-denial-v1",
+    "matching": "closed C-locale diagnostic grammar, exact credential-free repository and protected ref",
+    "surfaces": [
+      "forbidden clone",
+      "known peer SHA fetch",
+      "protected push/force/delete",
+      "frozen push"
+    ],
+    "classification_evidence": "fixed denial_classification/native_denial_classifications in each row"
+  },
+  "marker_scan_policy": {
+    "version": "prodguild-t01-actor-forbidden-body-canaries-v2",
+    "actor_forbidden_repositories": {
+      "backend": [],
+      "organizer": [
+        "solution_a",
+        "solution_b",
+        "pending"
+      ],
+      "student_a": [
+        "reference",
+        "draft_case",
+        "solution_b",
+        "pending"
+      ],
+      "student_b": [
+        "reference",
+        "draft_case",
+        "solution_a",
+        "pending"
+      ],
+      "reviewer": [
+        "reference",
+        "draft_case",
+        "pending"
+      ],
+      "expert": [
+        "reference",
+        "draft_case",
+        "pending"
+      ]
+    },
+    "starter_additionally_excludes": [
+      "solution_a",
+      "solution_b"
+    ],
+    "anonymous_excludes": [
+      "starter",
+      "reference",
+      "draft_case",
+      "solution_a",
+      "solution_b",
+      "pending"
+    ],
+    "body_encodings": [
+      "raw and UTF-8/16/32 text (BOM optional)",
+      "JSON keys/strings and Unicode escapes",
+      "line-leading JSON/base64 fragments including diff +/- payloads",
+      "nested canonical base64, optional trailing padding; declared encodings validated"
+    ],
+    "bounds": {
+      "body_bytes": 2097152,
+      "aggregate_scanned_bytes": 8388608,
+      "structure_depth": 24,
+      "structure_nodes": 16384,
+      "nested_base64_layers": 4
+    },
+    "body_surfaces": [
+      "every HTTP response returned by this lab, with explicit token/cookie/basic/anonymous recipient",
+      "API raw bytes before JSON parsing, including write/delete/rule/merge/annotation denials",
+      "20 named student starter/own-solution API absence responses including PR diff"
+    ],
+    "git_blob_scope": "raw/structured text in enumerated reachable fixture blobs, each below 65536 bytes",
+    "scope": "only inspected fixture responses/objects; not a universal encoding or surface scanner",
+    "exhausted_bounds_or_ambiguous_encoding": "fail closed"
+  },
+  "local_matrix_passed": false,
+  "production_ready": false,
+  "application_domain_runtime_tested": false,
+  "downstream_released": false
+}
