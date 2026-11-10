@@ -1,0 +1,47 @@
+default:
+    @just --list
+
+sync:
+    uv sync --locked
+
+run config="config.toml":
+    uv run web_api_cli {{quote(config)}}
+
+tests:
+    uv run pytest
+
+test-coverage:
+    uv run coverage run --source=src -m pytest
+    uv run coverage report
+    uv run coverage html -d .cov/html
+    uv run coverage xml -o .cov/coverage.xml
+
+ci-test:
+    #!/usr/bin/env sh
+    set -eu
+    mkdir -p .cov
+    test_status=0
+    uv run --no-sync coverage run --source=src -m pytest -v --junitxml=.cov/junit.xml || test_status=$?
+    uv run --no-sync coverage report
+    uv run --no-sync coverage xml -o .cov/coverage.xml
+    exit "$test_status"
+
+lint:
+    uv run ruff check src tests
+    uv run mypy
+    uv run codespell src tests
+    uv run bandit -r src -c pyproject.toml
+
+format:
+    uv run ruff format src tests
+
+format-check:
+    uv run ruff format --check src tests
+
+check: lint format-check tests
+
+migrations-run tag="head":
+    CONFIGURATION_PATH=config.toml uv run alembic upgrade {{quote(tag)}}
+
+migrations-make message:
+    CONFIGURATION_PATH=config.toml uv run alembic revision --autogenerate -m {{quote(message)}}

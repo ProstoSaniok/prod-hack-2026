@@ -1,0 +1,11 @@
+key,email,display_name,kind,password_env,initial_value
+expert_1,expert-1.seed@example.com,Эксперт 1,expert,SEEDDATA_PASSWORD,92
+expert_2,expert-2.seed@example.com,Эксперт 2,expert,SEEDDATA_PASSWORD,92
+organizer_1,organizer-1.seed@example.com,Организатор 1,organizer,SEEDDATA_PASSWORD,0
+organizer_2,organizer-2.seed@example.com,Организатор 2,organizer,SEEDDATA_PASSWORD,0
+performer_1,performer-1.seed@example.com,Участник 1,performer,SEEDDATA_PASSWORD,0
+performer_2,performer-2.seed@example.com,Участник 2,performer,SEEDDATA_PASSWORD,0
+review_minus_1,review-minus-1.seed@example.com,Ревьюер− 1,review_minus,SEEDDATA_PASSWORD,42
+review_minus_2,review-minus-2.seed@example.com,Ревьюер− 2,review_minus,SEEDDATA_PASSWORD,42
+review_plus_1,review-plus-1.seed@example.com,Ревьюер+ 1,review_plus,SEEDDATA_PASSWORD,65
+review_plus_2,review-plus-2.seed@example.com,Ревьюер+ 2,review_plus,SEEDDATA_PASSWORD,65

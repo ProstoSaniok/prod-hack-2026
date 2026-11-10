@@ -1,0 +1,30 @@
+{
+  "scope": "authorized-disposable-local-correction-runs-only",
+  "verified_at_utc": "2026-10-16T22:49:53.861681+00:00",
+  "runs": [
+    {
+      "run_id": "prodguild-t01-lab-3cbbba2fcb",
+      "owned_container_volume_network_removed": true,
+      "unrelated_resources_modified": false,
+      "absence_verified": true,
+      "private_fixture_json_mode0600": true
+    },
+    {
+      "run_id": "prodguild-t01-lab-d1ef16ed4a",
+      "owned_container_volume_network_removed": true,
+      "unrelated_resources_modified": false,
+      "absence_verified": true,
+      "private_fixture_json_mode0600": true
+    },
+    {
+      "run_id": "prodguild-t01-lab-bf59da5559",
+      "owned_container_volume_network_removed": true,
+      "unrelated_resources_modified": false,
+      "absence_verified": true,
+      "private_fixture_json_mode0600": true
+    }
+  ],
+  "historical_evidence_preserved": true,
+  "official_image_cache_retained": true,
+  "production_resources_touched": false
+}

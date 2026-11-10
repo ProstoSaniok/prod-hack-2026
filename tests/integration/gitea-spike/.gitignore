@@ -1,0 +1,5 @@
+# Local Python tooling; never commit operator-specific live fixture/evidence.
+__pycache__/
+.ruff_cache/
+fixture.local.json
+evidence.local.json

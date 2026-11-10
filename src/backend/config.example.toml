@@ -1,0 +1,19 @@
+[server]
+host = "127.0.0.1"
+port = 8080
+access_log = true
+
+[database]
+url = "postgresql+psycopg://postgres:postgres@127.0.0.1:5432/postgres"
+
+[access_token]
+# Development key; override with ACCESS_TOKEN_CRYPTO_KEY for deployment.
+crypto_key = "YlPGYA-WnyYW8Cd0bFZWPeZjPjfXhrD9P7ciCprYmmc="
+expires_in = 86400
+
+[gitea]
+# Operator-controlled origin only (no /api prefix). Empty means /ready returns 503.
+# Set GITEA_INTERNAL_API_URL and GITEA_API_TOKEN in the runtime environment.
+internal_api_url = ""
+api_token = ""
+request_timeout_seconds = 3.0

@@ -1,0 +1,16 @@
+[server]
+host = "0.0.0.0"
+port = 8080
+access_log = true
+
+[database]
+url = "postgresql+psycopg://postgres:postgres@postgresql:5432/postgres"
+
+[access_token]
+crypto_key = "YlPGYA-WnyYW8Cd0bFZWPeZjPjfXhrD9P7ciCprYmmc="
+expires_in = 86400
+
+[gitea]
+internal_api_url = ""
+api_token = ""
+request_timeout_seconds = 15.0

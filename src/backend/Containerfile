@@ -1,0 +1,54 @@
+ARG PY_IMAGE=registry.spirit.t-education.com/cicd-images/python-3.12:latest
+
+# Base image
+FROM ${PY_IMAGE} AS builder
+
+ARG UV_VERSION=0.12.23
+RUN python -m venv /opt/uv && /opt/uv/bin/pip install --no-cache-dir "uv==${UV_VERSION}"
+
+WORKDIR /app
+
+ENV PATH="/opt/uv/bin:$PATH" \
+    UV_PYTHON_DOWNLOADS=never \
+    UV_COMPILE_BYTECODE=1 \
+    UV_LINK_MODE=copy \
+    UV_PROJECT_ENVIRONMENT=/opt/venv
+
+COPY pyproject.toml uv.lock ./
+
+COPY src ./src
+
+RUN uv sync --locked --no-dev --no-editable --group migrations
+
+# App
+FROM ${PY_IMAGE} AS app
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PATH="/opt/venv/bin:$PATH" \
+    CONFIGURATION_PATH=/app/config.toml
+
+WORKDIR /app
+
+COPY --from=builder /opt/venv /opt/venv
+
+COPY alembic.ini ./
+
+COPY src/migrations ./src/migrations
+
+EXPOSE 8080
+
+CMD ["web_api_cli"]
+
+FROM builder AS tests
+
+# Tests
+RUN uv sync --locked --no-dev --no-editable --group tests
+
+COPY tests ./tests
+
+COPY config.example.toml ./
+
+ENV PATH="/opt/venv/bin:$PATH"
+
+CMD ["pytest", "-v"]
