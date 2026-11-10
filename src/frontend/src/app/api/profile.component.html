@@ -1,0 +1,350 @@
+<section class="profile-page" aria-labelledby="profile-title">
+  <div class="title-row">
+    <h1 id="profile-title">Профиль</h1>
+    @if (api.user() && profileError()) {
+      <button
+        tuiButton
+        appearance="flat"
+        size="s"
+        type="button"
+        [disabled]="profileLoading()"
+        (click)="loadProfile()"
+      >
+        Повторить загрузку профиля
+      </button>
+    }
+  </div>
+  @if (initializing()) {
+    <app-loading-state label="Открываем профиль…" [skeleton]="true" />
+  } @else if (api.user(); as user) {
+    @if (profileLoading()) {
+      <app-loading-state label="Загружаем профиль…" [skeleton]="!profile()" />
+    }
+    @if (profileError()) {
+      <p class="error" role="alert">{{ profileError() }}</p>
+    }
+    <section class="panel account-panel" aria-labelledby="account-title">
+      <div class="profile-avatar">
+        <svg viewBox="0 0 120 120" role="img" aria-label="Аватар по умолчанию" focusable="false">
+          <circle cx="60" cy="43" r="21" />
+          <path d="M22 106v-8a38 30 0 0 1 76 0v8Z" />
+        </svg>
+      </div>
+      <div class="account-info">
+        <h2 id="account-title">
+          {{ profile()?.display_name || 'Участник' }}
+        </h2>
+        <p>{{ user.email }}</p>
+      </div>
+    </section>
+    <section
+      class="skills-panel"
+      aria-labelledby="skills-title"
+      [attr.aria-busy]="profileLoading()"
+    >
+      <h2 id="skills-title">Грэйд</h2>
+      <section class="expert-path" aria-label="Как стать экспертом">
+        <h3>Как стать экспертом</h3>
+        <p>
+          Заявка подаётся отдельно для каждого навыка. Достигните уровня «Ревьюер+», выполните
+          условия в карточке навыка и нажмите «Подать заявку на эксперта». После подачи вашу
+          готовность проверит независимый эксперт.
+        </p>
+      </section>
+      @if (policyLoading()) {
+        <app-loading-state label="Загружаем шкалы навыков…" />
+      }
+      @if (policyError()) {
+        <div class="policy-error">
+          <p class="error" role="alert">Шкалы навыков недоступны. {{ policyError() }}</p>
+          <button
+            tuiButton
+            appearance="flat"
+            size="s"
+            type="button"
+            (click)="loadPolicy()"
+            [disabled]="policyLoading()"
+          >
+            Повторить загрузку шкал
+          </button>
+        </div>
+      }
+      @if (profile(); as current) {
+        @if (current.competencies.length) {
+          <ul class="skill-cards" aria-label="Ваши навыки">
+            @for (skill of current.competencies; track skill.competency_id) {
+              <li class="skill-card" [class.expert-card]="skill.grade === 'expert'">
+                <h3>{{ skill.name }}</h3>
+                <div class="skill-summary">
+                  <span class="skill-grade"
+                    >Грэйд {{ gradeNumber(skill.grade) }} · {{ gradeLabel(skill.grade) }}</span
+                  >
+                  <span class="skill-xp">{{ xpLabel(skill) }}</span>
+                </div>
+                @if (skill.probation; as probation) {
+                  <div class="probation-summary">
+                    <p><app-product-icon name="award" /> Испытательный период</p>
+                    <p>
+                      Подтверждено {{ probation.confirmed_reviews }} из
+                      {{ probation.required_successes }} ревью
+                    </p>
+                  </div>
+                }
+                @if (policy()) {
+                  @let maximum = progressMaximum(skill);
+                  <div
+                    class="skill-progress"
+                    [class.expert-progress]="skill.grade === 'expert'"
+                    [attr.data-grade]="gradeNumber(skill.grade)"
+                    role="progressbar"
+                    [attr.aria-label]="
+                      skill.name +
+                      ': ' +
+                      (nextGate(skill) ? 'до следующего уровня' : 'максимальный уровень')
+                    "
+                    aria-valuemin="0"
+                    [attr.aria-valuemax]="maximum"
+                    [attr.aria-valuenow]="progressValue(skill, maximum)"
+                    [attr.aria-valuetext]="progressDescription(skill)"
+                    [attr.tabindex]="skill.grade === 'expert' ? 0 : null"
+                  >
+                    @if (skill.grade === 'expert') {
+                      <span class="expert-dots" aria-hidden="true">
+                        @for (dot of expertDots; track dot.index) {
+                          <span
+                            class="expert-dot"
+                            [class.expert-glint]="dot.glint"
+                            [style.left.%]="dot.left"
+                            [style.top.%]="dot.top"
+                            [style.--dot-size.px]="dot.size"
+                            [style.--dot-x.px]="dot.x"
+                            [style.--dot-y.px]="dot.y"
+                            [style.--dot-spread-x.px]="dot.spreadX"
+                            [style.--dot-spread-y.px]="dot.spreadY"
+                            [style.--dot-duration.ms]="dot.duration"
+                            [style.--dot-delay.ms]="dot.delay"
+                          ></span>
+                        }
+                      </span>
+                    } @else {
+                      <span class="skill-track" aria-hidden="true">
+                        <span
+                          class="skill-fill"
+                          [style.width.%]="(progressValue(skill, maximum) / maximum) * 100"
+                        ></span>
+                      </span>
+                    }
+                  </div>
+                  <div class="scale-labels" aria-hidden="true">
+                    <span>{{ gradeLabel(skill.grade) }}</span>
+                    @if (nextGate(skill); as target) {
+                      <span>{{ gradeLabel(target.grade) }}</span>
+                    } @else {
+                      <span>{{
+                        skill.grade === 'review_plus'
+                          ? 'Уровень ревьюера достигнут'
+                          : 'Максимальный уровень'
+                      }}</span>
+                    }
+                  </div>
+                }
+                @if (skill.grade !== 'expert') {
+                  <section
+                    class="expert-path"
+                    [attr.aria-label]="skill.name + ': экспертный уровень'"
+                  >
+                    <h4>Заявка на эксперта</h4>
+                    @if (skill.grade !== 'review_plus') {
+                      <p>Сначала достигните уровня «Ревьюер+» по навыку «{{ skill.name }}».</p>
+                    } @else if (expertGate(); as target) {
+                      <p class="next-grade-summary">
+                        {{
+                          remainingXp(skill) > 0
+                            ? 'До порога для заявки — ' + remainingLabel(skill) + ' XP'
+                            : 'Порог XP для заявки достигнут'
+                        }}
+                      </p>
+                      @if (skill.next_grade; as progress) {
+                        <ul class="grade-requirements" aria-label="Условия экспертной заявки">
+                          <li>
+                            Успешные кейсы: {{ progress.successful_cases }} из
+                            {{ target.successful_cases }}
+                          </li>
+                          @if (!progress.previous_probation_passed) {
+                            <li>
+                              Завершите испытательные периоды ревьюера: эксперт должен подтвердить
+                              {{ policy()?.probation_required_reviews }} ревью на каждой ступени.
+                            </li>
+                          }
+                        </ul>
+                      }
+                    }
+                    @if (hasPendingApplication(skill)) {
+                      <p role="status">
+                        Заявка могла быть отправлена. Повторите исходный запрос, чтобы уточнить
+                        результат.
+                      </p>
+                      <button
+                        tuiButton
+                        appearance="secondary"
+                        size="s"
+                        type="button"
+                        [disabled]="!!applicationBusy()"
+                        (click)="apply(skill, true)"
+                      >
+                        Повторить подачу заявки
+                      </button>
+                    } @else if (
+                      skill.expert_application?.pending_application_id;
+                      as applicationId
+                    ) {
+                      <a
+                        class="application-action"
+                        tuiButton
+                        appearance="secondary"
+                        size="s"
+                        [routerLink]="['/reviewer-applications', applicationId]"
+                        >Открыть заявку</a
+                      >
+                    } @else {
+                      <button
+                        class="application-action"
+                        tuiButton
+                        appearance="secondary"
+                        size="s"
+                        type="button"
+                        [disabled]="!!applicationBusy() || !skill.expert_application?.can_apply"
+                        (click)="apply(skill)"
+                      >
+                        <app-product-icon name="award" /> Подать заявку на эксперта
+                      </button>
+                      @if (skill.grade === 'review_plus' && !skill.expert_application?.can_apply) {
+                        <p>
+                          Подача станет доступна после выполнения всех условий выше и завершения
+                          испытательных периодов. Доступ обновляется автоматически.
+                        </p>
+                      }
+                    }
+                    @if (applicationSkill() === skill.competency_id && applicationError()) {
+                      <p class="error" role="alert">{{ applicationError() }}</p>
+                    }
+                  </section>
+                }
+              </li>
+            }
+          </ul>
+        } @else if (!profileLoading() && !profileError()) {
+          <div class="skills-empty">
+            <p>Решайте кейсы — здесь появятся ваши навыки и XP.</p>
+            <a tuiButton appearance="accent" size="s" routerLink="/catalog">Выбрать кейс</a>
+          </div>
+        }
+      }
+    </section>
+    <section
+      #walletSection
+      id="wallet"
+      class="panel wallet-panel"
+      aria-labelledby="wallet-title"
+      tabindex="-1"
+    >
+      <h2 id="wallet-title">Баланс</h2>
+      @if (profile(); as current) {
+        <p class="balance">
+          <app-currency-amount [value]="current.wallet.available" />
+        </p>
+        @if (current.wallet.reserved > 0) {
+          <p class="reserve-note">
+            В резерве: <app-currency-amount [value]="current.wallet.reserved" />
+          </p>
+        }
+      } @else if (!profileLoading()) {
+        <p class="section-description">Баланс недоступен.</p>
+      }
+    </section>
+    <app-profile-activity [fragment]="fragment()">
+      <section
+        class="panel history-panel"
+        aria-labelledby="history-title"
+        [attr.aria-busy]="historyLoading()"
+      >
+        <div class="title-row">
+          <h2 id="history-title">История операций</h2>
+          @if (historyError()) {
+            <button
+              tuiButton
+              appearance="flat"
+              size="s"
+              type="button"
+              [disabled]="historyLoading()"
+              (click)="refreshHistory()"
+            >
+              Повторить загрузку истории
+            </button>
+          }
+        </div>
+        @if (historyLoading()) {
+          <app-loading-state label="Загружаем историю…" [skeleton]="!transactions().length" />
+        }
+        @if (historyError()) {
+          <p class="error" role="alert">{{ historyError() }}</p>
+        }
+        <ul class="transactions">
+          @for (item of transactions(); track item.id) {
+            <li class="transaction">
+              <div class="transaction-details">
+                <strong>{{ labels[item.kind] || 'Операция с балансом' }}</strong>
+                <time [attr.datetime]="item.created_at">{{
+                  item.created_at | date: 'dd.MM.yyyy HH:mm'
+                }}</time>
+                @if (item.reserved_delta) {
+                  <span class="reserve-change"
+                    >Резерв:
+                    <app-currency-amount [value]="item.reserved_delta" [showPlus]="true" />
+                  </span>
+                }
+              </div>
+              <span class="transaction-amount">
+                <app-currency-amount [value]="item.settled_delta" [showPlus]="true" />
+              </span>
+            </li>
+          } @empty {
+            @if (!historyLoading() && !historyError()) {
+              <li class="section-description">Операций пока нет.</li>
+            }
+          }
+        </ul>
+        @if (transactionOffset() > 0 || transactions().length >= 20) {
+          <div class="pagination" aria-label="Страницы операций">
+            <button
+              tuiButton
+              appearance="flat"
+              size="s"
+              type="button"
+              [disabled]="historyLoading() || transactionOffset() === 0"
+              (click)="page(-1)"
+            >
+              Назад
+            </button>
+            <span>Страница {{ transactionOffset() / 20 + 1 }}</span>
+            <button
+              tuiButton
+              appearance="flat"
+              size="s"
+              type="button"
+              [disabled]="historyLoading() || transactions().length < 20"
+              (click)="page(1)"
+            >
+              Далее
+            </button>
+          </div>
+        }
+      </section>
+    </app-profile-activity>
+  } @else {
+    <p role="status">Войдите в аккаунт, чтобы увидеть профиль.</p>
+    <a tuiButton appearance="accent" routerLink="/login" [queryParams]="{ returnUrl: '/profile' }"
+      >Войти</a
+    >
+  }
+</section>

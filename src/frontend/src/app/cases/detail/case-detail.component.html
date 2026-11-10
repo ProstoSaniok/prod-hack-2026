@@ -1,0 +1,87 @@
+<a class="back-link" routerLink="/catalog">Все кейсы</a>
+@if (study(); as item) {
+  <header class="page-heading">
+    <div class="tags">
+      <span class="category">{{ item.category }}</span>
+      <span>{{ item.level }}</span>
+      <span>{{ item.duration }}</span>
+    </div>
+    <h1>{{ item.title }}</h1>
+    <p>{{ item.description }}</p>
+  </header>
+
+  <div class="detail-layout">
+    <div class="brief">
+      <section class="panel" aria-labelledby="context-title">
+        <h2 id="context-title">Контекст</h2>
+        <p>{{ item.context }}</p>
+      </section>
+      <section class="panel" aria-labelledby="material-title">
+        <h2 id="material-title">Исходные данные</h2>
+        <p>{{ item.material }}</p>
+        <span class="material-note">Учебный материал для самостоятельной работы</span>
+      </section>
+      <section class="panel" aria-labelledby="tasks-title">
+        <h2 id="tasks-title">Что нужно сделать</h2>
+        <ol class="task-list">
+          @for (task of item.tasks; track $index) {
+            <li>
+              <span class="task-number">{{ $index + 1 }}</span
+              ><span>{{ task }}</span>
+            </li>
+          }
+        </ol>
+      </section>
+    </div>
+    <aside class="summary">
+      <section class="panel start-panel" aria-labelledby="start-title">
+        <h2 id="start-title">Работа над кейсом</h2>
+        <p>Изучите материалы, подготовьте файлы решения и отправьте их на проверку.</p>
+        <dl>
+          <div>
+            <dt>На прохождение</dt>
+            <dd>{{ item.duration }}</dd>
+          </div>
+          <div>
+            <dt>Уровень</dt>
+            <dd>{{ item.level }}</dd>
+          </div>
+        </dl>
+        <a tuiButton appearance="accent" size="l" [routerLink]="['/cases', item.id, 'work']">
+          {{ actionLabel() }}
+        </a>
+        <p class="small-note">
+          @if (!store.user()) {
+            Для сохранения прогресса войдите или зарегистрируйтесь.
+          } @else if (work()?.status === 'completed') {
+            Кейс завершён. Ваше решение доступно для просмотра.
+          } @else if (work()?.status === 'submitted') {
+            Решение отправлено на проверку. Файлы доступны только для чтения.
+          } @else {
+            Решение и прогресс сохраняются в этом браузере.
+          }
+        </p>
+      </section>
+      <section class="panel" aria-labelledby="criteria-title">
+        <h2 id="criteria-title">На что обратить внимание</h2>
+        <ul class="criteria-list">
+          @for (criterion of item.criteria; track $index) {
+            <li>{{ criterion }}</li>
+          }
+        </ul>
+        <h3>Навыки</h3>
+        <div class="skills">
+          @for (skill of item.skills; track skill) {
+            <span>{{ skill }}</span>
+          }
+        </div>
+      </section>
+    </aside>
+  </div>
+} @else {
+  <section class="panel not-found">
+    <h1>Кейс не найден</h1>
+    <p>Проверьте ссылку или выберите другую задачу в каталоге.</p>
+    <a tuiButton appearance="accent" routerLink="/catalog">Перейти к кейсам</a>
+  </section>
+}

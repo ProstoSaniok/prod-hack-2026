@@ -1,0 +1,58 @@
+/* Deliberately shared across routed component boundaries, scoped to the active shell. */
+[data-workspace-host].code-maximized {
+  position: fixed;
+  z-index: 20;
+  inset: 0;
+  display: flex;
+  height: 100dvh;
+  min-height: 0;
+  background: var(--prodguild-bg);
+}
+
+[data-workspace-host].code-maximized > :not([data-workspace-content]) {
+  display: none !important;
+}
+
+[data-workspace-host].code-maximized > [data-workspace-content] {
+  flex: 1 1 0;
+  width: 100%;
+  max-width: none;
+  margin: 0;
+}
+
+[data-workspace-host].code-maximized [data-code-maximize-branch] {
+  display: flex !important;
+  flex: 1 1 0;
+  flex-direction: column;
+  align-items: stretch;
+  width: 100%;
+  max-width: none;
+  min-width: 0;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  gap: 0;
+}
+
+[data-workspace-host].code-maximized
+  [data-code-maximize-branch]
+  > :not([data-code-maximize-branch], [data-code-maximize-target]) {
+  display: none !important;
+}
+
+[data-workspace-host].code-maximized [data-code-maximize-target] {
+  display: flex;
+  flex: 1 1 0;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  padding: 16px 24px;
+  overflow: auto;
+  background: var(--prodguild-surface);
+}
+
+@media (width <= 620px) {
+  [data-workspace-host].code-maximized [data-code-maximize-target] {
+    padding: 12px;
+  }
+}

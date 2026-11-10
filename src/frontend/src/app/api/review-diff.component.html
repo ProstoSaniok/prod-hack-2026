@@ -1,0 +1,239 @@
+@if (error()) {
+  <div class="error-state" role="alert">
+    <p>{{ error() }}</p>
+    <button
+      tuiButton
+      appearance="secondary"
+      size="s"
+      type="button"
+      [disabled]="busy()"
+      (click)="loadFiles(fileOffset())"
+    >
+      Повторить загрузку изменений
+    </button>
+  </div>
+}
+@if (busy()) {
+  <app-loading-state label="Загружаем изменения…" />
+}
+<div class="diff-workspace" [attr.aria-busy]="busy()">
+  <aside class="changed-files" aria-label="Изменённые файлы">
+    <div class="explorer-heading">
+      <h2><app-product-icon name="folder" /> Изменённые файлы</h2>
+      <span>{{ reviewed().size }} просмотрено</span>
+    </div>
+    <p class="local-hint">Отметки просмотра — до обновления страницы.</p>
+    <nav aria-label="Выбор изменённого файла">
+      @for (file of files().entries; track file.comment_path) {
+        <button
+          class="file-button"
+          type="button"
+          [class.selected]="path() === file.comment_path"
+          [attr.aria-pressed]="path() === file.comment_path"
+          [disabled]="busy()"
+          (click)="openFile(file.comment_path)"
+        >
+          <span class="file-path">
+            <app-product-icon [name]="reviewed().has(file.comment_path) ? 'check' : 'file'" />
+            {{ file.comment_path }}
+          </span>
+          <span class="file-meta"
+            >{{ status(file.status) }} <span class="added">+{{ file.additions }}</span>
+            <span class="removed">−{{ file.deletions }}</span></span
+          >
+          @if (count(file.comment_path)) {
+            <span class="file-meta">Комментарии: {{ count(file.comment_path) }}</span>
+          }
+        </button>
+      }
+    </nav>
+    @if (fileOffset() > 0 || files().next_offset !== null) {
+      <div class="pagination">
+        <button
+          tuiButton
+          appearance="flat"
+          size="s"
+          type="button"
+          [disabled]="busy() || fileOffset() === 0"
+          (click)="loadFiles(fileOffset() - 20)"
+        >
+          Предыдущие файлы
+        </button>
+        <button
+          tuiButton
+          appearance="flat"
+          size="s"
+          type="button"
+          [disabled]="busy() || files().next_offset === null"
+          (click)="loadFiles(files().next_offset ?? 0)"
+        >
+          Следующие файлы
+        </button>
+      </div>
+    }
+  </aside>
+  <section class="diff-content" aria-label="Изменения в файле">
+    @if (currentFile(); as file) {
+      <header class="file-heading">
+        <div>
+          <h3>{{ file.comment_path }}</h3>
+          <span
+            >{{ status(file.status) }} · <span class="added">+{{ file.additions }}</span> /
+            <span class="removed">−{{ file.deletions }}</span></span
+          >
+        </div>
+        <label class="viewed"
+          ><input
+            type="checkbox"
+            [checked]="reviewed().has(path())"
+            (change)="toggleReviewed()"
+          />Просмотрено</label
+        >
+      </header>
+      <p class="line-hint">
+        Выделите текст или выберите номера строк. Shift расширяет диапазон. Слева — исходник, справа
+        — решение; выделение неизменённых строк относится к решению.
+      </p>
+      @if (selectionNotice()) {
+        <p class="line-hint" role="status">{{ selectionNotice() }}</p>
+      }
+      <div
+        class="diff-scroll"
+        role="region"
+        aria-label="Различия по строкам"
+        tabindex="0"
+        (mouseup)="selectText($event)"
+        (keyup)="selectText($event)"
+      >
+        @for (line of rows(); track $index) {
+          <div
+            class="diff-line"
+            [class.addition]="line.kind === 'addition'"
+            [class.deletion]="line.kind === 'deletion'"
+            [class.highlighted]="highlighted(line)"
+          >
+            @if (line.old_line !== null) {
+              <button
+                class="line-number"
+                type="button"
+                [disabled]="busy() || disabled()"
+                [attr.aria-label]="'Комментарий к строке ' + line.old_line + ', исходник'"
+                (click)="selectLine(line, 'old', $event.shiftKey)"
+              >
+                {{ line.old_line }}
+              </button>
+            } @else {
+              <span class="line-number"></span>
+            }
+            @if (line.new_line !== null) {
+              <button
+                class="line-number"
+                type="button"
+                [disabled]="busy() || disabled()"
+                [attr.aria-label]="'Комментарий к строке ' + line.new_line + ', решение'"
+                (click)="selectLine(line, 'new', $event.shiftKey)"
+              >
+                {{ line.new_line }}
+              </button>
+            } @else {
+              <span class="line-number"></span>
+            }
+            <span class="line-sign" aria-hidden="true">{{
+              line.kind === 'addition' ? '+' : line.kind === 'deletion' ? '−' : ' '
+            }}</span>
+            <code [attr.data-diff-line]="$index"
+              >{{ line.text }}{{ line.text_truncated ? ' [строка сокращена сервером]' : '' }}</code
+            >
+          </div>
+          @if (selectionRow() === $index && selection(); as selected) {
+            <div class="inline-action">
+              <span
+                >{{ selected.side === 'old' ? 'Исходник' : 'Решение' }} · строка {{ selected.line
+                }}{{ selected.end_line !== selected.line ? '–' + selected.end_line : '' }}</span
+              >
+              <button
+                tuiButton
+                appearance="accent"
+                size="s"
+                type="button"
+                [disabled]="busy() || disabled()"
+                (click)="startComment()"
+              >
+                <app-product-icon name="plus" /> Добавить комментарий
+              </button>
+            </div>
+          }
+          @if (composerVisible() && composerRow() === $index) {
+            <div class="inline-comment inline-composer" aria-label="Новый комментарий к строкам">
+              <ng-container [ngTemplateOutlet]="composer()" />
+            </div>
+          }
+          @for (comment of line.comments; track comment.index) {
+            <article
+              class="inline-comment"
+              aria-label="Комментарий к строке"
+              [attr.data-comment-index]="comment.index"
+              tabindex="-1"
+            >
+              <strong
+                >{{ comment.side === 'old' ? 'Исходник' : 'Решение' }} · строка {{ comment.line
+                }}{{
+                  comment.end_line && comment.end_line !== comment.line
+                    ? '–' + comment.end_line
+                    : ''
+                }}</strong
+              >
+              <p>{{ comment.body }}</p>
+              <button
+                tuiButton
+                appearance="flat"
+                size="s"
+                type="button"
+                [disabled]="disabled()"
+                (click)="commentRemoved.emit(comment.index)"
+              >
+                <app-product-icon name="trash" /> Удалить комментарий {{ comment.index + 1 }}
+              </button>
+            </article>
+          }
+        } @empty {
+          @if (!busy()) {
+            <p class="empty-state">
+              Текстовых строк для сравнения нет. Посмотрите полные файлы решения.
+            </p>
+          }
+        }
+      </div>
+      @if (lineHistory().length || lines().next_offset !== null) {
+        <div class="pagination line-pagination">
+          <span>Фрагмент с позиции {{ lineOffset() + 1 }}</span>
+          <button
+            tuiButton
+            appearance="secondary"
+            size="s"
+            type="button"
+            [disabled]="busy() || !lineHistory().length"
+            (click)="pageLines(false)"
+          >
+            Предыдущие строки
+          </button>
+          <button
+            tuiButton
+            appearance="secondary"
+            size="s"
+            type="button"
+            [disabled]="busy() || lines().next_offset === null"
+            (click)="pageLines(true)"
+          >
+            Следующие строки
+          </button>
+        </div>
+      }
+    } @else if (!busy() && !error()) {
+      <div class="empty-state">
+        <h3>Нет изменений на этой странице</h3>
+        <p>Проверьте полные файлы решения и оставьте общий вывод.</p>
+      </div>
+    }
+  </section>
+</div>

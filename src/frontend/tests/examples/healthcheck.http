@@ -1,0 +1,6 @@
+# Direct backend URL; change to the address of your running test backend.
+@backendUrl = http://127.0.0.1:8080
+
+### Liveness: expected HTTP 200, Content-Type application/json, {"ok": true}
+GET {{backendUrl}}/healthcheck
+Accept: application/json

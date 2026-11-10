@@ -1,0 +1,163 @@
+<div class="auth-page">
+  <section class="auth-card" aria-labelledby="auth-title">
+    <h1 id="auth-title">
+      {{ isRegistration() ? 'Регистрация' : 'Вход' }}
+    </h1>
+    @if (loading()) {
+      <app-loading-state [label]="isRegistration() ? 'Создаём аккаунт…' : 'Выполняем вход…'" />
+    }
+    <form [formGroup]="form" (ngSubmit)="submit()" novalidate [attr.aria-busy]="loading()">
+      @if (isRegistration()) {
+        <div class="field">
+          <tui-textfield [tuiTextfieldCleaner]="false">
+            <label tuiLabel for="auth-name">Ваше имя</label>
+            <input
+              tuiTextfield
+              id="auth-name"
+              formControlName="name"
+              autocomplete="name"
+              maxlength="60"
+              [readOnly]="loading()"
+              [attr.aria-invalid]="!!error('name')"
+              [attr.aria-describedby]="error('name') ? 'name-error' : null"
+            />
+          </tui-textfield>
+          @if (error('name')) {
+            <p id="name-error" class="field-error">{{ error('name') }}</p>
+          }
+        </div>
+      }
+      <div class="field">
+        <tui-textfield [tuiTextfieldCleaner]="false">
+          <label tuiLabel for="auth-login">Email</label>
+          <input
+            tuiTextfield
+            id="auth-login"
+            formControlName="login"
+            type="email"
+            autocomplete="email"
+            autocapitalize="none"
+            spellcheck="false"
+            maxlength="320"
+            [readOnly]="loading()"
+            [attr.aria-invalid]="!!error('login')"
+            [attr.aria-describedby]="error('login') ? 'login-error' : null"
+          />
+        </tui-textfield>
+        @if (error('login')) {
+          <p id="login-error" class="field-error">{{ error('login') }}</p>
+        }
+      </div>
+      <div class="field">
+        <div class="password-control">
+          <tui-textfield [tuiTextfieldCleaner]="false">
+            <label tuiLabel for="auth-password">Пароль</label>
+            <input
+              tuiTextfield
+              id="auth-password"
+              formControlName="password"
+              [type]="showPassword() ? 'text' : 'password'"
+              [autocomplete]="isRegistration() ? 'new-password' : 'current-password'"
+              maxlength="128"
+              [readOnly]="loading()"
+              [attr.aria-invalid]="!!error('password')"
+              [attr.aria-describedby]="error('password') ? 'password-error' : 'password-hint'"
+            />
+          </tui-textfield>
+          <button
+            tuiButton
+            appearance="flat"
+            size="s"
+            type="button"
+            class="password-toggle"
+            [attr.aria-label]="showPassword() ? 'Скрыть пароль' : 'Показать пароль'"
+            [attr.aria-pressed]="showPassword()"
+            (click)="showPassword.set(!showPassword())"
+          >
+            {{ showPassword() ? 'Скрыть' : 'Показать' }}
+          </button>
+        </div>
+        @if (error('password')) {
+          <p id="password-error" class="field-error">{{ error('password') }}</p>
+        } @else {
+          <p id="password-hint" class="field-hint">От 8 до 128 символов</p>
+        }
+      </div>
+      @if (isRegistration()) {
+        <div class="field">
+          <tui-textfield [tuiTextfieldCleaner]="false">
+            <label tuiLabel for="auth-repeat-password">Повторите пароль</label>
+            <input
+              tuiTextfield
+              id="auth-repeat-password"
+              formControlName="repeatPassword"
+              [type]="showPassword() ? 'text' : 'password'"
+              autocomplete="new-password"
+              maxlength="128"
+              [readOnly]="loading()"
+              [attr.aria-invalid]="!!error('repeatPassword')"
+              [attr.aria-describedby]="error('repeatPassword') ? 'repeat-password-error' : null"
+            />
+          </tui-textfield>
+          @if (error('repeatPassword')) {
+            <p id="repeat-password-error" class="field-error">{{ error('repeatPassword') }}</p>
+          }
+        </div>
+      }
+      @if (formError()) {
+        <p class="form-error" role="alert">{{ formError() }}</p>
+      }
+      <button
+        tuiButton
+        appearance="accent"
+        size="l"
+        type="submit"
+        class="submit-button"
+        [disabled]="loading()"
+      >
+        {{ loading() ? 'Подождите…' : isRegistration() ? 'Зарегистрироваться' : 'Войти' }}
+      </button>
+    </form>
+
+    <p class="switch-mode">
+      {{ isRegistration() ? 'Уже есть аккаунт?' : 'Впервые здесь?' }}
+      <a
+        [routerLink]="loading() ? null : isRegistration() ? '/login' : '/register'"
+        [attr.aria-disabled]="loading() || null"
+        [attr.tabindex]="loading() ? -1 : null"
+        [queryParams]="{ returnUrl: returnUrl }"
+        >{{ isRegistration() ? 'Войти' : 'Зарегистрироваться' }}</a
+      >
+    </p>
+    <div class="demo-entry">
+      <p>Войти как:</p>
+      <div class="role-buttons" aria-label="Вход в тестовый аккаунт">
+        @for (role of localRoles; track role.key) {
+          <button
+            tuiButton
+            appearance="secondary"
+            size="m"
+            type="button"
+            [disabled]="loading()"
+            (click)="openRole(role.key, role.label)"
+          >
+            {{ role.label }}
+          </button>
+        }
+      </div>
+      @if (hasAdminEntry) {
+        <a
+          tuiButton
+          appearance="secondary"
+          size="m"
+          class="admin-link"
+          href="/admin"
+          (click)="openAdmin($event)"
+          [attr.aria-disabled]="loading() || null"
+          [attr.tabindex]="loading() ? -1 : null"
+          >Админ</a
+        >
+      }
+    </div>
+  </section>
+</div>

@@ -1,0 +1,204 @@
+@if (maximize.available && allowMaximize()) {
+  <div class="toolbar maximize-toolbar">
+    <button
+      #maximizeButton
+      tuiButton
+      appearance="flat"
+      size="s"
+      type="button"
+      class="maximize-toggle"
+      [attr.aria-expanded]="maximize.expanded()"
+      [attr.aria-controls]="maximize.id"
+      (click)="maximize.toggle(maximizeButton)"
+    >
+      <app-product-icon [name]="maximize.expanded() ? 'collapse' : 'expand'" />
+      {{ maximize.expanded() ? 'Свернуть код' : 'Развернуть код' }}
+    </button>
+  </div>
+}
+@if (error()) {
+  <p role="alert">{{ error() }}</p>
+  <button
+    tuiButton
+    appearance="flat"
+    size="s"
+    type="button"
+    [disabled]="busy() || loading()"
+    (click)="load()"
+  >
+    Повторить загрузку файлов
+  </button>
+}
+@if (busy() || loading()) {
+  <app-loading-state label="Загружаем данные…" />
+}
+<section class="file-panel" aria-label="Файлы решения">
+  <aside class="file-explorer">
+    <h2><app-product-icon name="folder" /> Файлы решения</h2>
+    <app-file-tree
+      [files]="files().entries"
+      [selected]="selected()"
+      [attr.inert]="busy() || loading() ? '' : null"
+      [attr.aria-busy]="busy() || loading()"
+      label="Файлы решения"
+      (fileSelect)="openFile($event)"
+    />
+    @if (fileOffset() > 0 || files().next_offset !== null) {
+      <div class="toolbar">
+        <button
+          tuiButton
+          appearance="flat"
+          size="s"
+          type="button"
+          [disabled]="busy() || fileOffset() === 0"
+          (click)="loadFiles(fileOffset() - 20)"
+        >
+          Предыдущие файлы
+        </button>
+        <button
+          tuiButton
+          appearance="flat"
+          size="s"
+          type="button"
+          [disabled]="busy() || files().next_offset === null"
+          (click)="loadFiles(files().next_offset ?? 0)"
+        >
+          Следующие файлы
+        </button>
+      </div>
+    }
+  </aside>
+  <div class="code-panel">
+    <div class="version-toolbar">
+      <div class="version-switch" role="group" aria-label="Версия файлов">
+        <button
+          type="button"
+          [class.active]="side() === 'base'"
+          [attr.aria-pressed]="side() === 'base'"
+          [disabled]="busy() || loading()"
+          (click)="changeSide('base')"
+        >
+          Исходные файлы
+        </button>
+        <button
+          type="button"
+          [class.active]="side() === 'head'"
+          [attr.aria-pressed]="side() === 'head'"
+          [disabled]="busy() || loading()"
+          (click)="changeSide('head')"
+        >
+          Решение
+        </button>
+      </div>
+    </div>
+    @if (commentable()) {
+      <div class="toolbar selection-toolbar">
+        @if (selection(); as range) {
+          <span>Строки {{ range.line }}–{{ range.end_line }}</span>
+          <button
+            tuiButton
+            appearance="secondary"
+            size="s"
+            type="button"
+            [disabled]="busy() || loading()"
+            (click)="commentSelection()"
+          >
+            Комментировать выделение
+          </button>
+        } @else {
+          <span>Выделите код или нажмите номера строк. Shift расширяет выделение.</span>
+        }
+      </div>
+    }
+    <div class="editor-stage">
+      <app-repository-editor
+        [files]="documents()"
+        [scopeId]="resource() + ':' + id() + ':' + side()"
+        [selectedId]="selected()"
+        [content]="content()"
+        [editorExtensions]="editorExtensions()"
+        [readOnly]="true"
+        [selectionEnabled]="commentable()"
+        [focusLines]="focusLines()"
+        (lineSelection)="selectLines($event)"
+        [busy]="busy() || loading()"
+        [allowDelete]="false"
+        [allowCreate]="false"
+        emptyTitle="Выберите файл"
+        emptyDescription=""
+        status=""
+        (fileSelect)="openFile($event)"
+        (download)="downloadFile()"
+      />
+    </div>
+  </div>
+</section>
+<details class="diff-surface">
+  <summary><app-product-icon name="arrows" /> Изменения относительно исходника</summary>
+  <ul aria-label="Изменённые файлы">
+    @for (entry of diff().entries; track entry.comment_path) {
+      <li>
+        <button type="button" [disabled]="busy()" (click)="openLines(entry.comment_path)">
+          {{ entry.comment_path }} · {{ status(entry.status) }} · +{{ entry.additions }} / −{{
+            entry.deletions
+          }}
+        </button>
+      </li>
+    } @empty {
+      <li>На этой странице изменений нет.</li>
+    }
+  </ul>
+  @if (diffOffset() > 0 || diff().next_offset !== null) {
+    <div class="toolbar">
+      <button
+        tuiButton
+        appearance="flat"
+        type="button"
+        [disabled]="busy() || diffOffset() === 0"
+        (click)="loadDiff(diffOffset() - 20)"
+      >
+        Предыдущие изменения
+      </button>
+      <button
+        tuiButton
+        appearance="flat"
+        type="button"
+        [disabled]="busy() || diff().next_offset === null"
+        (click)="loadDiff(diff().next_offset ?? 0)"
+      >
+        Следующие изменения
+      </button>
+    </div>
+  }
+  @if (linePath()) {
+    <h3>Различия: {{ linePath() }}</h3>
+    <div class="diff" role="region" aria-label="Различия по строкам" tabindex="0">
+      @for (line of lines().lines; track $index) {
+        <pre [class.addition]="line.kind === 'addition'" [class.deletion]="line.kind === 'deletion'"
+          >{{ line.old_line ?? ' ' }} {{ line.new_line ?? ' ' }} {{
+            line.kind === 'addition' ? '+' : line.kind === 'deletion' ? '−' : ' '
+          }} {{ line.text }}{{ line.text_truncated ? ' [строка сокращена]' : '' }}</pre>
+      }
+    </div>
+    <div class="toolbar">
+      <button
+        tuiButton
+        appearance="flat"
+        type="button"
+        [disabled]="busy() || lineHistory().length === 0"
+        (click)="previousLines()"
+      >
+        Предыдущие строки
+      </button>
+      <button
+        tuiButton
+        appearance="flat"
+        type="button"
+        [disabled]="busy() || lines().next_offset === null"
+        (click)="nextLines()"
+      >
+        Следующие строки
+      </button>
+    </div>
+  }
+</details>

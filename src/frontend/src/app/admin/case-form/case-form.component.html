@@ -1,0 +1,146 @@
+<form [formGroup]="form" (ngSubmit)="$event.preventDefault()" [attr.aria-busy]="busy()">
+  <fieldset [disabled]="busy()">
+    <div class="field">
+      <label for="case-name">Название кейса</label>
+      <tui-textfield [tuiTextfieldCleaner]="false">
+        <input
+          #nameInput
+          id="case-name"
+          tuiTextfield
+          formControlName="name"
+          maxlength="500"
+          [readOnly]="busy()"
+          [invalid]="name.touched && name.invalid"
+          [attr.aria-invalid]="name.touched && name.invalid"
+          aria-describedby="case-name-hint"
+        />
+      </tui-textfield>
+      <small id="case-name-hint" [class.error]="name.touched && name.invalid">
+        {{ name.touched && name.invalid ? 'Введите название кейса' : 'До 500 символов' }}
+      </small>
+    </div>
+    <div class="field">
+      <label for="case-description">Описание</label>
+      <textarea
+        #descriptionInput
+        id="case-description"
+        tuiAppearance="textfield"
+        formControlName="description"
+        [readOnly]="busy()"
+        rows="4"
+        maxlength="3000"
+        placeholder="Что нужно сделать участникам?"
+        [attr.aria-invalid]="description.touched && description.invalid"
+        aria-describedby="case-description-hint"
+      ></textarea>
+      <small id="case-description-hint" [class.error]="description.touched && description.invalid">
+        {{
+          description.touched && description.invalid
+            ? 'Добавьте описание кейса'
+            : 'До 3000 символов'
+        }}
+      </small>
+    </div>
+    <div class="field">
+      <label for="case-expected">Ожидаемый результат</label>
+      <textarea
+        id="case-expected"
+        tuiAppearance="textfield"
+        formControlName="expectedResult"
+        rows="3"
+        maxlength="3000"
+        [readOnly]="busy()"
+        [attr.aria-invalid]="
+          form.controls.expectedResult.touched && form.controls.expectedResult.invalid
+        "
+      ></textarea>
+    </div>
+    <app-skill-select
+      [competencies]="competencies()"
+      [loading]="loading()"
+      [loadError]="loadError()"
+      [hasMore]="hasMore()"
+      [selectedIds]="selectedIds"
+      [disabled]="busy()"
+      label="Компетенции кейса"
+      (selectedIdsChange)="selectSkills($event)"
+      (opened)="opened.emit()"
+      (loadMoreRequested)="loadMoreRequested.emit()"
+    />
+    <app-competency-names-notice [skills]="form.getRawValue().competencies" />
+    <div formArrayName="competencies" class="skills-settings">
+      @for (skill of form.controls.competencies.controls; track skill; let i = $index) {
+        <div class="skill-fields" [formGroupName]="i">
+          <h3>{{ skillName(skill.controls.competency_id.value) }}</h3>
+          <div>
+            <label [for]="'required-' + i"
+              >Требуемый уровень навыка
+              <span class="visually-hidden">{{
+                skillName(skill.controls.competency_id.value)
+              }}</span>
+            </label>
+            <tui-textfield tuiTextfieldSize="m" [tuiTextfieldCleaner]="false">
+              <input
+                tuiTextfield
+                [id]="'required-' + i"
+                type="text"
+                inputmode="decimal"
+                [readOnly]="busy()"
+                [value]="levelInput(skill.controls.required_value)"
+                [attr.aria-label]="
+                  'Требуемый уровень навыка ' + skillName(skill.controls.competency_id.value)
+                "
+                [invalid]="skill.controls.required_value.invalid"
+                [attr.aria-invalid]="skill.controls.required_value.invalid"
+                [attr.aria-describedby]="'required-hint-' + i"
+                (input)="updateLevel(skill.controls.required_value, $event)"
+                (blur)="skill.controls.required_value.markAsTouched()"
+              />
+            </tui-textfield>
+            <small
+              [id]="'required-hint-' + i"
+              [class.error]="skill.controls.required_value.invalid"
+            >
+              @if (skill.controls.required_value.invalid) {
+                Введите число от 0 до 100. Настройки навыков пока не сохранены; текст сохраняется
+                отдельно.
+              } @else {
+                От 0 до 100, можно дробное число. Это уровень отдельного навыка.
+              }
+            </small>
+          </div>
+          <div>
+            <label [for]="'weight-' + i">Вес навыка, %</label>
+            <tui-textfield tuiTextfieldSize="m" [tuiTextfieldCleaner]="false">
+              <input
+                tuiTextfield
+                [id]="'weight-' + i"
+                type="text"
+                inputmode="decimal"
+                [readOnly]="busy()"
+                [value]="weightPercent(skill.controls.weight)"
+                [attr.aria-label]="
+                  'Вес навыка ' + skillName(skill.controls.competency_id.value) + ', %'
+                "
+                (input)="updateWeight(skill.controls.weight, $event)"
+                (blur)="skill.controls.weight.markAsTouched()"
+                [attr.aria-invalid]="skill.controls.weight.invalid"
+                [invalid]="skill.controls.weight.invalid"
+                [attr.aria-describedby]="'weight-hint-' + i"
+              />
+            </tui-textfield>
+            <small [id]="'weight-hint-' + i" [class.error]="skill.controls.weight.invalid">
+              @if (skill.controls.weight.invalid) {
+                Введите вес больше 0 и не выше 25%. Например, 10. Это значение пока не сохранено.
+              } @else {
+                Вес определяет награду за этот навык: до
+                {{ maximumXp(skill.controls.weight.value ?? 0) }} XP за успешное решение. Итог
+                зависит от оценки и уровня ревьюера.
+              }
+            </small>
+          </div>
+        </div>
+      }
+    </div>
+  </fieldset>
+</form>

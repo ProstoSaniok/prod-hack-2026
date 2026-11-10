@@ -1,0 +1,21 @@
+<svg width="100" height="60" viewBox="0 0 100 60" fill="none" xmlns="http://www.w3.org/2000/svg">
+<rect width="8" height="60" fill="#333333"/>
+<path d="M15 0C23.2843 0 30 6.71573 30 15C30 23.2843 23.2843 30 15 30V22C18.866 22 22 18.866 22 15C22 11.134 18.866 8 15 8V0Z" fill="#333333"/>
+<rect width="15" height="8" fill="#333333"/>
+<rect y="22" width="15" height="8" fill="#333333"/>
+<path d="M50 0C58.2843 0 65 6.71573 65 15C65 23.2843 58.2843 30 50 30V22C53.866 22 57 18.866 57 15C57 11.134 53.866 8 50 8V0Z" fill="#333333"/>
+<rect x="35" width="15" height="8" fill="#333333"/>
+<rect x="35" y="22" width="15" height="8" fill="#333333"/>
+<rect x="35" width="8" height="60" fill="#333333"/>
+<path d="M57 37H65V60H57V37Z" fill="#333333"/>
+<mask id="mask0_152_1509" style="mask-type:alpha" maskUnits="userSpaceOnUse" x="50" y="22" width="15" height="15">
+<path d="M50 22H65V37H50V22Z" fill="#D9D9D9"/>
+</mask>
+<g mask="url(#mask0_152_1509)">
+<path d="M50 26C56.0751 26 61 30.9249 61 37C61 43.0751 56.0751 48 50 48C43.9249 48 39 43.0751 39 37C39 30.9249 43.9249 26 50 26Z" stroke-width="8" stroke="#333333"/>
+</g>
+<mask id="stroke0_152_1509" fill="white">
+<path d="M70 0H85C93.2843 0 100 6.71573 100 15V45C100 53.2843 93.2843 60 85 60H70V0Z"/>
+</mask>
+<path d="M70 0H85C93.2843 0 100 6.71573 100 15V45C100 53.2843 93.2843 60 85 60H70V0Z" stroke-width="16" stroke="#333333" mask="url(#stroke0_152_1509)"/>
+</svg>

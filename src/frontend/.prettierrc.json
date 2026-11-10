@@ -1,0 +1,7 @@
+{
+  "singleQuote": true,
+  "printWidth": 100,
+  "arrowParens": "avoid",
+  "endOfLine": "lf",
+  "overrides": [{ "files": "src/**/*.html", "options": { "parser": "angular" } }]
+}

@@ -1,0 +1,407 @@
+:host {
+  display: block;
+
+  --ink: var(--prodguild-text);
+  --muted: var(--prodguild-text-secondary);
+  --paper: var(--prodguild-bg);
+  --line: var(--prodguild-border);
+  --tui-background-base: var(--prodguild-surface-muted);
+
+  color: var(--ink);
+  background: var(--paper);
+}
+
+.workspace-layout {
+  display: flex;
+  min-height: 100dvh;
+}
+
+.workspace-content {
+  flex: 1;
+  min-width: 0;
+  container-type: inline-size;
+}
+
+.workspace-header {
+  display: flex;
+  align-items: center;
+  min-height: 80px;
+  gap: 20px;
+  padding: 16px 32px;
+}
+
+.workspace-name {
+  font-size: 16px;
+  font-weight: 500;
+  overflow-wrap: anywhere;
+}
+
+.user-avatar,
+.member-avatar {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--prodguild-surface-muted);
+  font-size: 13px;
+}
+
+.user-avatar {
+  margin-left: auto;
+}
+
+svg {
+  width: 22px;
+  height: 22px;
+  fill: none;
+  stroke: currentcolor;
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+main {
+  width: min(100%, 1280px);
+  padding: 32px;
+  margin-inline: auto;
+}
+
+.page-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+h1 {
+  margin: 0;
+  font-size: 32px;
+  line-height: 1.2;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+h2 {
+  margin: 0 0 16px;
+  font-size: 20px;
+  line-height: 1.3;
+  font-weight: 500;
+  overflow-wrap: anywhere;
+}
+
+.projects-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(260px, 0.46fr);
+  align-items: start;
+  gap: 24px;
+}
+
+.projects-panel,
+.details-panel,
+.team-panel,
+.settings-panel {
+  min-width: 0;
+  border-radius: 24px;
+  background: var(--prodguild-surface);
+}
+
+.list-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 20px;
+  border-bottom: 1px solid var(--line);
+}
+
+tui-textfield {
+  min-width: 0;
+}
+
+.list-toolbar tui-textfield {
+  flex: 1;
+}
+
+.result-count {
+  flex-shrink: 0;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.project-list,
+.member-list {
+  margin: 0;
+  padding: 8px;
+  list-style: none;
+}
+
+.project-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  width: 100%;
+  min-height: 88px;
+  padding: 16px;
+  border: 0;
+  border-radius: 14px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background 120ms ease;
+}
+
+.project-row:hover {
+  --muted: var(--prodguild-text);
+
+  background: var(--prodguild-hover);
+}
+
+.project-row.selected {
+  --muted: var(--prodguild-text);
+
+  background: var(--prodguild-surface-muted);
+}
+
+.project-summary {
+  flex: 1;
+  min-width: 0;
+}
+
+.project-summary strong {
+  display: block;
+  font-size: 16px;
+  line-height: 1.35;
+  font-weight: 500;
+  overflow-wrap: anywhere;
+}
+
+.project-summary > span {
+  display: block;
+  margin-top: 6px;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+
+.project-status {
+  flex-shrink: 0;
+  color: var(--muted);
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.project-status.complete {
+  color: #2f6132;
+}
+
+.details-panel,
+.settings-panel {
+  padding: 24px;
+}
+
+.details-panel p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+dl {
+  margin-block: 24px;
+}
+
+dt {
+  margin-top: 16px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+dd {
+  margin: 6px 0 0;
+  font-size: 14px;
+  overflow-wrap: anywhere;
+}
+
+.details-panel a {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  border-top: 1px solid var(--line);
+  padding-top: 20px;
+  font-size: 14px;
+}
+
+form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.form-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.field-error {
+  margin-top: -10px;
+  min-height: 1em;
+  color: #9e2c24;
+  font-size: 12px;
+}
+
+.empty-state {
+  padding: 32px 16px;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.team-panel {
+  max-width: 760px;
+}
+
+.member-list li {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 20px 16px;
+}
+
+.member-list li + li {
+  border-top: 1px solid var(--line);
+}
+
+.member-list strong {
+  font-weight: 500;
+}
+
+.member-list p {
+  margin: 6px 0 0;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.settings-panel {
+  max-width: 520px;
+}
+
+.settings-panel button {
+  align-self: flex-start;
+}
+
+.example-note,
+.notice {
+  margin: 24px 0 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+.notice:empty {
+  margin: 0;
+}
+
+a:focus-visible,
+button:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 3px;
+}
+
+@container (width <= 960px) {
+  .projects-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .details-panel {
+    max-width: none;
+  }
+}
+
+@media (width <= 1000px) {
+  main {
+    padding: 24px;
+  }
+
+  .workspace-header {
+    padding: 16px 24px;
+  }
+}
+
+@media (width <= 620px) {
+  .workspace-header {
+    min-height: 64px;
+    gap: 12px;
+    padding: 12px 16px 12px 64px;
+  }
+
+  .workspace-name {
+    font-size: 14px;
+  }
+
+  .user-avatar {
+    width: 32px;
+    height: 32px;
+    font-size: 11px;
+  }
+
+  main {
+    padding: 24px 16px;
+  }
+
+  h1 {
+    font-size: 28px;
+  }
+
+  .page-heading {
+    gap: 12px;
+  }
+
+  .page-heading button {
+    font-size: 13px;
+  }
+
+  .projects-layout {
+    gap: 16px;
+  }
+
+  .list-toolbar {
+    padding: 12px;
+    gap: 10px;
+  }
+
+  .project-row {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 10px;
+    padding: 14px 12px;
+  }
+
+  .details-panel {
+    padding: 20px;
+  }
+}
+
+@container (width <= 620px) {
+  .page-heading {
+    flex-wrap: wrap;
+  }
+
+  .project-row {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 10px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .project-row {
+    transition: none;
+  }
+}

@@ -1,0 +1,834 @@
+<header class="page-heading">
+  <div>
+    <h1>
+      {{
+        workspace()?.case?.title ??
+          (published()?.status === 'published'
+            ? 'Опубликованное ревью'
+            : published()
+              ? 'Ревью на проверке'
+              : expertMode
+                ? 'Экспертное ревью'
+                : 'Ревью')
+      }}
+    </h1>
+  </div>
+</header>
+@if (error() && !fileWorkspace()?.expanded()) {
+  <p #requestError tabindex="-1" role="alert">{{ error() }}</p>
+}
+@if (notice() && !fileWorkspace()?.expanded()) {
+  <p role="status">{{ notice() }}</p>
+}
+@if (loading()) {
+  <app-loading-state label="Загружаем ревью…" />
+}
+@if (busy() && !fileWorkspace()?.expanded()) {
+  <app-loading-state [label]="operation() || 'Сохраняем изменения…'" />
+}
+@if (!id()) {
+  <section class="surface start-review" aria-label="Начать проверку">
+    <h2>
+      {{ activeAssignment() ? 'Текущая проверка' : 'Новая проверка' }}
+    </h2>
+    <p>Задания выдаются из общей очереди с учётом ваших прав.</p>
+    @if (activeAssignment(); as active) {
+      @if (active.kind !== assignmentKind) {
+        <p>
+          У вас уже есть {{ active.kind === 'quality_check' ? 'экспертное' : 'обычное' }} ревью.
+          Завершите его или верните в очередь перед новой проверкой.
+        </p>
+      }
+    }
+    <div class="actions">
+      <button
+        tuiButton
+        appearance="accent"
+        type="button"
+        [disabled]="busy() || loading() || (!activeAssignment() && !canClaim())"
+        (click)="claim()"
+      >
+        {{
+          busy()
+            ? operation() || 'Подождите…'
+            : activeAssignment()
+              ? 'Продолжить ревью'
+              : 'Начать ревью'
+        }}
+      </button>
+      @if (activeAssignment(); as task) {
+        <button
+          tuiButton
+          appearance="secondary"
+          type="button"
+          [disabled]="busy() || loading()"
+          (click)="cancelling.set(task)"
+        >
+          Вернуть в очередь
+        </button>
+      }
+    </div>
+    @if (mode() && !canClaim() && !activeAssignment()) {
+      <p>Сейчас у вас нет прав на новые проверки.</p>
+    }
+    @if (claimEmpty()) {
+      <div class="empty-state" role="status">
+        <h3>Подходящих решений пока нет</h3>
+        <p>Попробуйте позже.</p>
+        <a routerLink="/catalog">В каталог кейсов →</a>
+      </div>
+    }
+  </section>
+  @if (historyError()) {
+    <p role="status">История ревью сейчас недоступна. Активную проверку можно вернуть в очередь.</p>
+  }
+  @if (!expertMode) {
+    <section class="probation-panel" aria-label="Развитие ревьюера">
+      <button
+        tuiButton
+        appearance="flat"
+        type="button"
+        [attr.aria-expanded]="showProbation()"
+        aria-controls="review-probation"
+        (click)="showProbation.set(!showProbation())"
+      >
+        <app-product-icon name="award" />Испытательный период
+      </button>
+      <div id="review-probation">
+        @if (showProbation()) {
+          <app-probation />
+        }
+      </div>
+    </section>
+  }
+  <h2 class="section-heading">Активные назначения</h2>
+  <section class="review-list" [class.expert-list]="expertMode" aria-label="Назначенные ревью">
+    @for (task of visibleAssignments(); track task.id) {
+      <a class="review-row" [routerLink]="[basePath, task.id]">
+        <span class="author-avatar" aria-hidden="true"
+          ><app-product-icon [name]="task.kind === 'quality_check' ? 'award' : 'comment'"
+        /></span>
+        <div class="review-description">
+          <span class="eyebrow">{{
+            task.kind === 'quality_check' ? 'Перепроверка ревью' : 'Первичная проверка'
+          }}</span>
+          <h2>{{ taskTitles().get(task.id) ?? 'Продолжить ревью' }}</h2>
+          @if (!task.can_continue) {
+            <p>Проверка недоступна. Верните её в очередь.</p>
+          }
+        </div>
+        <span class="open-review">Открыть <app-product-icon name="arrow-right" /></span
+      ></a>
+    } @empty {
+      @if (!loading() && !error()) {
+        <p class="empty">Активных проверок нет.</p>
+      }
+    }
+  </section>
+  @if (assignmentOffset() > 0 || assignments().length >= 20) {
+    <div class="actions">
+      <button
+        tuiButton
+        appearance="flat"
+        type="button"
+        [disabled]="busy() || loading() || assignmentOffset() === 0"
+        (click)="assignmentPage(-1)"
+      >
+        Предыдущие назначения</button
+      ><button
+        tuiButton
+        appearance="flat"
+        type="button"
+        [disabled]="busy() || loading() || assignments().length < 20"
+        (click)="assignmentPage(1)"
+      >
+        Следующие назначения
+      </button>
+    </div>
+  }
+  @if (!expertMode) {
+    <h2 class="section-heading">Мои ревью</h2>
+    <section class="review-list" aria-label="Мои ревью">
+      @for (review of visibleHistory(); track review.id) {
+        <a class="review-row" [routerLink]="['/review-results', review.id]">
+          <span class="author-avatar" aria-hidden="true"><app-product-icon name="check" /></span>
+          <div class="review-description">
+            <h2>Открыть ревью</h2>
+            <p>
+              {{
+                review.status === 'published'
+                  ? 'Опубликовано'
+                  : review.status === 'needs_revision'
+                    ? 'Нужна доработка'
+                    : 'Ожидает эксперта'
+              }}
+            </p>
+          </div>
+          <span class="open-review">Открыть <app-product-icon name="arrow-right" /></span
+        ></a>
+      } @empty {
+        @if (!loading() && !error()) {
+          <p class="empty">Отправленных ревью пока нет.</p>
+        }
+      }
+    </section>
+    @if (historyOffset() > 0 || historyNext() !== null) {
+      <div class="actions">
+        <button
+          tuiButton
+          appearance="flat"
+          type="button"
+          [disabled]="busy() || loading() || historyOffset() === 0"
+          (click)="historyPage(-1)"
+        >
+          Предыдущие ревью</button
+        ><button
+          tuiButton
+          appearance="flat"
+          type="button"
+          [disabled]="busy() || loading() || historyNext() === null"
+          (click)="historyPage(1)"
+        >
+          Следующие ревью
+        </button>
+      </div>
+    }
+  }
+} @else {
+  <a class="back-link" [routerLink]="basePath"><span aria-hidden="true">←</span> Все ревью</a>
+  @if (published(); as review) {
+    <app-published-review [review]="review" />
+    @if (review.reviewer_id === api.learning.api.user()?.id) {
+      <app-review-quality-history [reviewId]="review.id" />
+      @if (review.status === 'needs_revision') {
+        <a [routerLink]="['/reviews', review.assignment_id, 'correction', review.id]"
+          >Исправить ревью</a
+        >
+      }
+    }
+  }
+  @if (qualitySessionCurrent() ? qualityTask() : null; as task) {
+    <app-review-quality
+      #qualityEditor
+      [assignment]="task"
+      (returnRequested)="cancelling.set(task)"
+      (assessmentSaved)="qualityAssessmentSaved(task, $event)"
+    />
+  }
+  @if (qualitySessionCurrent() ? completedQualityTask() : null; as task) {
+    @if (completedQualityReceipt(); as assessment) {
+      <section class="surface" aria-label="Сохранённая экспертная оценка">
+        <h2>Экспертная проверка завершена</h2>
+        <p role="status">
+          Экспертная оценка сохранена:
+          {{
+            assessment.decision === 'confirmed'
+              ? 'Ревью подтверждено'
+              : 'Ревью возвращено на доработку'
+          }}.
+        </p>
+        <p>Оценка качества: {{ assessment.score }} / 100</p>
+        <h3>Ваш комментарий ревьюеру</h3>
+        <p [style.white-space]="'pre-wrap'">{{ assessment.feedback }}</p>
+        <p>Комментарий доступен ревьюеру и эксперту проверки. Автор решения его не увидит.</p>
+      </section>
+    } @else {
+      <app-completed-quality-assessment [assignment]="task" />
+    }
+  }
+  @if (workspace(); as current) {
+    @if (correction(); as review) {
+      <p role="status">
+        Исправление ревью · редакция {{ review.current_revision.number }}.
+        @if (correctionClosed()) {
+          Отправка исправления сейчас недоступна. Ваш текст остаётся на странице.
+          <a [routerLink]="['/review-results', review.id]">Посмотреть актуальный результат</a>
+        }
+      </p>
+    }
+    <nav class="review-tabs" aria-label="Разделы ревью">
+      <button
+        type="button"
+        [class.active]="panel() === 'overview'"
+        [attr.aria-pressed]="panel() === 'overview'"
+        (click)="panel.set('overview')"
+      >
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M5 3h10l4 4v14H5zM15 3v5h4M9 12h6M9 16h6" /></svg
+        >1. Задание
+      </button>
+      <button
+        type="button"
+        [class.active]="panel() === 'files'"
+        [attr.aria-pressed]="panel() === 'files'"
+        (click)="panel.set('files')"
+      >
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7h7l2-3h9v16H3z" /></svg>2. Файлы
+        решения
+      </button>
+      <button
+        type="button"
+        [class.active]="panel() === 'feedback'"
+        [attr.aria-pressed]="panel() === 'feedback'"
+        (click)="panel.set('feedback')"
+      >
+        <app-product-icon name="comment" />3. Обратная связь
+      </button>
+    </nav>
+    <section class="overview" [hidden]="panel() !== 'overview'">
+      @if (correction(); as review) {
+        <app-published-review [review]="review" [historical]="true" />
+        <app-review-quality-history [reviewId]="review.id" />
+      }
+      <article>
+        <h2>Задание</h2>
+        <p>{{ current.case.description }}</p>
+      </article>
+      <article>
+        <h2>Ожидаемый результат</h2>
+        <p>{{ current.case.expected_result }}</p>
+      </article>
+      <div class="actions">
+        <button tuiButton appearance="accent" type="button" (click)="panel.set('files')">
+          Перейти к файлам решения
+        </button>
+      </div>
+    </section>
+    @if (current.assignment.status === 'assigned') {
+      <button
+        tuiButton
+        appearance="secondary"
+        type="button"
+        [disabled]="busy()"
+        (click)="cancelling.set(current.assignment)"
+      >
+        Вернуть в очередь
+      </button>
+    }
+    @if (panel() === 'files') {
+      <div class="actions">
+        <p class="step-hint">
+          Проверьте изменения файл за файлом. Выделите строки или нажмите их номера. Shift расширяет
+          диапазон.
+        </p>
+        <button tuiButton appearance="accent" type="button" (click)="panel.set('feedback')">
+          Перейти к обратной связи
+        </button>
+      </div>
+    }
+    <ng-template #commentEditor>
+      <form [formGroup]="commentForm" (ngSubmit)="addComment()">
+        <label for="comment-body">Комментарий</label
+        ><textarea
+          #commentBody
+          id="comment-body"
+          formControlName="body"
+          maxlength="1000"
+          [readOnly]="editorLocked()"
+        ></textarea>
+        @if (commentForm.controls.path.value) {
+          <div class="comment-anchor" role="status">
+            <strong>{{ commentForm.controls.path.value }}</strong>
+            <span
+              >{{ commentForm.controls.side.value === 'old' ? 'Исходник' : 'Решение' }} · строка
+              {{ commentForm.controls.line.value
+              }}{{
+                commentForm.controls.end_line.value &&
+                commentForm.controls.end_line.value !== commentForm.controls.line.value
+                  ? '–' + commentForm.controls.end_line.value
+                  : ''
+              }}</span
+            >
+            <code>{{ commentQuote() }}</code>
+            <button
+              tuiButton
+              appearance="flat"
+              size="s"
+              type="button"
+              [disabled]="editorLocked()"
+              (click)="clearAnchor()"
+            >
+              Сделать общим комментарием
+            </button>
+          </div>
+        } @else {
+          <p class="field-hint">
+            Общий комментарий. Выделите строки в файле, чтобы оставить замечание к коду.
+          </p>
+        }
+        <button
+          tuiButton
+          appearance="flat"
+          type="submit"
+          [disabled]="editorLocked() || commentForm.invalid || comments().length >= 20"
+        >
+          <app-product-icon name="save" /> Сохранить комментарий
+        </button>
+      </form>
+    </ng-template>
+    <ng-template #draftRecovery>
+      @if ((error() || correction()) && !confirmComplete()) {
+        <button
+          tuiButton
+          appearance="secondary"
+          size="s"
+          type="button"
+          [disabled]="busy()"
+          (click)="reloadDraft()"
+        >
+          {{
+            correction() ? 'Обновить редакцию и серверный черновик' : 'Загрузить серверный черновик'
+          }}
+        </button>
+      }
+      @if (serverDraft(); as remote) {
+        <section class="draft-recovery" aria-label="Серверный черновик">
+          <h3>Серверный черновик</h3>
+          <p>Ваш текст пока не изменён. Сравните версии перед заменой.</p>
+          <p>Оценка: {{ remote.score ?? '—' }} · {{ verdictLabel(remote.verdict ?? '') }}</p>
+          <h4>Сильные стороны</h4>
+          <p>{{ remote.feedback.strengths }}</p>
+          <h4>Проблемы</h4>
+          <p>{{ remote.feedback.problems }}</p>
+          <h4>Следующие шаги</h4>
+          <p>{{ remote.feedback.next_steps }}</p>
+          @for (comment of remote.comments; track $index) {
+            <p>
+              <strong
+                >{{ comment.path || 'Общий комментарий'
+                }}{{ comment.line ? ' · ' + comment.line : ''
+                }}{{ comment.end_line ? '–' + comment.end_line : '' }}
+                {{
+                  comment.side === 'old' ? 'Исходник' : comment.side === 'new' ? 'Решение' : ''
+                }}</strong
+              ><br />{{ comment.body }}
+            </p>
+          }
+          <button
+            tuiButton
+            appearance="secondary"
+            size="s"
+            type="button"
+            [disabled]="busy()"
+            (click)="acceptServerDraft()"
+          >
+            Принять серверный черновик
+          </button>
+          <button
+            tuiButton
+            appearance="flat"
+            size="s"
+            type="button"
+            [disabled]="busy()"
+            (click)="serverDraft.set(null)"
+          >
+            Продолжить с моим текстом
+          </button>
+        </section>
+      }
+      @if (localCopy()) {
+        <section class="draft-recovery" aria-label="Локальная копия черновика">
+          <p>
+            Копия вашего текста сохранена до ухода со страницы. Восстановление меняет её местами с
+            текущим текстом и ничего не отправляет на сервер.
+          </p>
+          <button
+            tuiButton
+            appearance="secondary"
+            size="s"
+            type="button"
+            [disabled]="busy()"
+            (click)="restoreLocalCopy()"
+          >
+            Восстановить сохранённую копию
+          </button>
+          <button
+            tuiButton
+            appearance="flat"
+            size="s"
+            type="button"
+            [disabled]="busy()"
+            (click)="localCopy.set(null)"
+          >
+            Удалить сохранённую копию
+          </button>
+        </section>
+      }
+    </ng-template>
+    <div
+      class="review-code-workspace"
+      appWorkspaceMaximize
+      #fileWorkspace="workspaceMaximize"
+      [hidden]="panel() !== 'files'"
+    >
+      @if (fileWorkspace.available) {
+        <div class="maximize-toolbar">
+          <button
+            #maximizeButton
+            tuiButton
+            appearance="flat"
+            size="s"
+            type="button"
+            [attr.aria-expanded]="fileWorkspace.expanded()"
+            [attr.aria-controls]="fileWorkspace.id"
+            (click)="fileWorkspace.toggle(maximizeButton)"
+          >
+            <app-product-icon [name]="fileWorkspace.expanded() ? 'collapse' : 'expand'" />
+            {{ fileWorkspace.expanded() ? 'Свернуть код' : 'Развернуть код' }}
+          </button>
+        </div>
+      }
+      @if (fileWorkspace.expanded()) {
+        @if (error()) {
+          <p #requestError tabindex="-1" role="alert">{{ error() }}</p>
+        }
+        @if (notice()) {
+          <p role="status">{{ notice() }}</p>
+        }
+        @if (busy()) {
+          <app-loading-state [label]="operation() || 'Сохраняем изменения…'" />
+        }
+      }
+      <div class="review-workspace api-workspace">
+        <div class="review-files">
+          <div class="file-view-switch" role="group" aria-label="Представление файлов">
+            <button
+              tuiButton
+              size="s"
+              type="button"
+              [appearance]="fileView() === 'diff' ? 'accent' : 'secondary'"
+              [attr.aria-pressed]="fileView() === 'diff'"
+              (click)="selectFileView('diff')"
+            >
+              <app-product-icon name="arrows" /> Изменения
+            </button>
+            <button
+              tuiButton
+              size="s"
+              type="button"
+              [appearance]="fileView() === 'all' ? 'accent' : 'secondary'"
+              [attr.aria-pressed]="fileView() === 'all'"
+              (click)="selectFileView('all')"
+            >
+              <app-product-icon name="folder" /> Все файлы
+            </button>
+          </div>
+          <app-review-diff
+            #reviewDiff
+            [composer]="fileView() === 'diff' ? commentEditor : null"
+            [commentAnchor]="commentAnchor()"
+            [hidden]="fileView() !== 'diff'"
+            [id]="current.assignment.id"
+            [comments]="comments()"
+            [disabled]="editorLocked()"
+            (lineSelected)="selectLine($event)"
+            (commentRemoved)="removeComment($event)"
+          />
+          @if (allFilesOpened()) {
+            <app-review-file-viewer
+              #reviewSnapshot
+              [hidden]="fileView() !== 'all'"
+              [id]="current.assignment.id"
+              [composer]="fileView() === 'all' ? commentEditor : null"
+              [commentAnchor]="commentAnchor()"
+              [comments]="comments()"
+              [disabled]="editorLocked()"
+              (lineSelected)="selectLine($event)"
+              (commentRemoved)="removeComment($event)"
+            />
+          }
+        </div>
+        <aside class="discussion-panel" aria-label="Обсуждения к файлу">
+          <div class="discussion-heading">
+            <h2>Обсуждения</h2>
+            <span class="count">{{ comments().length }}/20</span>
+          </div>
+          <p class="discussion-note">
+            Комментарии входят в черновик. Автор увидит их вместе с итоговым ревью.
+          </p>
+          @if (
+            fileView() === 'diff' ? !diff()?.composerVisible() : !snapshot()?.composerVisible()
+          ) {
+            <ng-container [ngTemplateOutlet]="commentEditor" />
+          }
+          <ng-container [ngTemplateOutlet]="draftRecovery" />
+
+          <button
+            tuiButton
+            appearance="secondary"
+            size="m"
+            type="button"
+            [disabled]="editorLocked() || form.invalid"
+            (click)="save()"
+          >
+            <app-product-icon name="save" /> Сохранить черновик
+          </button>
+          <p class="draft-state" role="status">
+            {{ dirty() || pendingComment() ? 'Есть несохранённые изменения' : 'Черновик сохранён' }}
+          </p>
+          @if (comments().length >= 20) {
+            <p role="status">
+              Достигнут лимит: 20 комментариев. Удалите лишний, чтобы добавить новый.
+            </p>
+          }
+          <div class="threads">
+            @for (comment of comments(); track $index) {
+              <article class="thread">
+                <p>
+                  @if (comment.path) {
+                    <button
+                      tuiButton
+                      appearance="flat"
+                      size="s"
+                      type="button"
+                      (click)="openComment(comment)"
+                    >
+                      {{ comment.path }} · {{ comment.line
+                      }}{{
+                        comment.end_line && comment.end_line !== comment.line
+                          ? '–' + comment.end_line
+                          : ''
+                      }}
+                      · {{ comment.side === 'old' ? 'Исходник' : 'Решение' }}</button
+                    ><br />
+                  }
+                  {{ comment.body }}
+                </p>
+                <button
+                  tuiButton
+                  appearance="flat"
+                  type="button"
+                  [disabled]="editorLocked()"
+                  (click)="removeComment($index)"
+                >
+                  <app-product-icon name="trash" /> Удалить комментарий {{ $index + 1 }}
+                </button>
+              </article>
+            }
+          </div>
+        </aside>
+      </div>
+    </div>
+    <section
+      class="review-form surface"
+      aria-label="Черновик ревью"
+      [hidden]="panel() !== 'feedback'"
+    >
+      <h2>Обратная связь</h2>
+      <p>
+        Сформулируйте общий вывод о решении. Заполните все пять полей. Перед отправкой мы сохраним
+        ваш текст; отдельно сохранять его не обязательно.
+      </p>
+      <p class="review-summary">
+        Комментариев в ревью: {{ comments().length }}. Они будут отправлены вместе с вердиктом и
+        рекомендациями.
+      </p>
+      <progress
+        class="review-progress"
+        [value]="completedRequirements()"
+        [max]="requirements().length"
+        aria-label="Заполнение ревью"
+      ></progress>
+      <p class="form-progress" role="status">
+        Готово {{ completedRequirements() }} из 5 ·
+        {{ dirty() || pendingComment() ? 'Есть несохранённые изменения' : 'Черновик сохранён' }}
+      </p>
+      @if (supervised()) {
+        <p class="supervision-note">Автор получит ревью после подтверждения экспертом.</p>
+      }
+      @if (pendingComment()) {
+        <p #pendingCommentHelp tabindex="-1" class="validation-help" role="status">
+          Остался не добавленный комментарий к файлу. Добавьте его или очистите текст перед
+          отправкой.
+        </p>
+        <button tuiButton appearance="flat" type="button" (click)="panel.set('files')">
+          Вернуться к комментарию
+        </button>
+      }
+      @if (validationRequested() && completedRequirements() < 5) {
+        <div #validationSummary tabindex="-1" class="validation-help" role="alert">
+          <p>Чтобы отправить ревью, заполните:</p>
+          <ul>
+            @for (requirement of requirements(); track requirement.label) {
+              @if (!requirement.met) {
+                <li>{{ requirement.label }}</li>
+              }
+            }
+          </ul>
+        </div>
+      }
+      <form [formGroup]="form" (ngSubmit)="prepareComplete()">
+        <label for="review-score">Оценка от 0 до 100</label
+        ><input
+          id="review-score"
+          type="number"
+          min="0"
+          max="100"
+          formControlName="score"
+          aria-describedby="score-help"
+          [attr.aria-invalid]="validationRequested() && !requirements()[0].met"
+          [readOnly]="editorLocked()"
+        />
+        <p id="score-help" class="field-hint">70–100 — принято; 0–69 — нужны изменения.</p>
+        <tui-textfield [tuiTextfieldCleaner]="false" [stringify]="verdictLabel">
+          <label tuiLabel for="review-verdict">Вердикт</label>
+          <select
+            tuiTextfield
+            id="review-verdict"
+            formControlName="verdict"
+            [readOnly]="editorLocked()"
+          ></select>
+          <tui-data-list *tuiTextfieldDropdown>
+            <button tuiOption type="button" value="">Не выбран</button>
+            <button tuiOption type="button" value="approved">Принято</button>
+            <button tuiOption type="button" value="changes_requested">Нужны изменения</button>
+          </tui-data-list>
+        </tui-textfield>
+        <label for="review-strengths">Сильные стороны</label
+        ><textarea
+          id="review-strengths"
+          formControlName="strengths"
+          maxlength="6000"
+          [readOnly]="editorLocked()"
+        ></textarea>
+        <label for="review-problems">Проблемы</label
+        ><textarea
+          id="review-problems"
+          formControlName="problems"
+          maxlength="6000"
+          [readOnly]="editorLocked()"
+        ></textarea>
+        <label for="review-next">Следующие шаги</label
+        ><textarea
+          id="review-next"
+          formControlName="next_steps"
+          maxlength="6000"
+          [readOnly]="editorLocked()"
+        ></textarea>
+        @if (!confirmComplete()) {
+          <div class="actions">
+            <button
+              tuiButton
+              appearance="accent"
+              type="submit"
+              [disabled]="editorLocked() || loading()"
+            >
+              {{
+                busy()
+                  ? operation() || 'Подождите…'
+                  : correction()
+                    ? 'Отправить исправление'
+                    : 'Отправить ревью'
+              }}
+            </button>
+            <button
+              tuiButton
+              appearance="secondary"
+              type="button"
+              [disabled]="editorLocked() || form.invalid"
+              (click)="save()"
+            >
+              Сохранить черновик
+            </button>
+          </div>
+        }
+      </form>
+      <ng-container [ngTemplateOutlet]="draftRecovery" />
+      @if (confirmComplete()) {
+        <div
+          #confirmation
+          tabindex="-1"
+          class="confirmation"
+          role="region"
+          aria-label="Подтверждение отправки ревью"
+        >
+          <h3>{{ correction() ? 'Отправить исправленное ревью?' : 'Отправить ревью?' }}</h3>
+          <p>
+            <strong>{{
+              form.controls.verdict.value === 'approved' ? 'Принято' : 'Нужны изменения'
+            }}</strong>
+            · {{ form.controls.score.value }}/100 · Комментариев: {{ comments().length }}
+          </p>
+          <p>
+            Ваш текст сохранён.
+            {{
+              supervised() === true
+                ? 'Ревью отправится эксперту. После подтверждения его увидит автор решения.'
+                : supervised() === false
+                  ? 'Автор решения увидит оценку и рекомендации. После отправки изменить отзыв будет нельзя.'
+                  : 'Ревью будет опубликовано или отправлено эксперту, если нужно подтверждение.'
+            }}
+          </p>
+          <button
+            tuiButton
+            appearance="accent"
+            type="button"
+            [disabled]="busy() || !canComplete()"
+            (click)="complete()"
+          >
+            {{ busy() ? 'Отправляем ревью…' : 'Подтвердить отправку ревью' }}</button
+          ><button
+            tuiButton
+            appearance="flat"
+            type="button"
+            [disabled]="busy()"
+            (click)="confirmComplete.set(false)"
+          >
+            Вернуться к редактированию
+          </button>
+        </div>
+      }
+    </section>
+  }
+  @if (error() && !workspace() && !qualityTask() && !unavailableAssignment()) {
+    <button
+      tuiButton
+      appearance="secondary"
+      type="button"
+      [disabled]="busy() || loading()"
+      (click)="load()"
+    >
+      Повторить загрузку
+    </button>
+  }
+}
+@if (unavailableAssignment(); as task) {
+  <section class="surface" aria-label="Недоступная проверка">
+    @if (task.status === 'assigned') {
+      <h2>Проверка недоступна</h2>
+      <p>Права на эту проверку изменились. Её можно вернуть в очередь.</p>
+      <button tuiButton appearance="secondary" type="button" (click)="cancelling.set(task)">
+        Вернуть в очередь
+      </button>
+    } @else {
+      <h2>Проверка закрыта</h2>
+      <p>Это назначение уже завершено или возвращено в очередь.</p>
+      <p>Результат и доступное исправление находятся в разделе «Мои ревью».</p>
+      <a routerLink="/reviews">Открыть мои ревью</a>
+    }
+  </section>
+}
+@if (cancelling()) {
+  <section class="confirmation" role="region" aria-label="Подтверждение возврата в очередь">
+    <h2>Вернуть проверку в очередь?</h2>
+    <p>Ваш черновик не будет отправлен. Работу получит другой ревьюер.</p>
+    <button
+      tuiButton
+      appearance="accent"
+      type="button"
+      [disabled]="busy()"
+      (click)="cancelAssignment()"
+    >
+      Подтвердить возврат
+    </button>
+    <button
+      tuiButton
+      appearance="secondary"
+      type="button"
+      [disabled]="busy()"
+      (click)="cancelling.set(null)"
+    >
+      Продолжить проверку
+    </button>
+  </section>
+}

@@ -1,0 +1,34 @@
+<a
+  class="case-row"
+  [routerLink]="destination()"
+  [attr.aria-label]="action() + ': ' + study().title"
+>
+  <div class="case-details">
+    <h2>{{ study().title }}</h2>
+    <p class="description">{{ study().description }}</p>
+    @if (work(); as currentWork) {
+      <div class="work-progress">
+        <span>
+          @if (currentWork.status === 'completed') {
+            Решение завершено
+          } @else if (currentWork.status === 'submitted') {
+            На проверке
+          } @else {
+            Выполнено {{ currentWork.steps.length }} из {{ study().tasks.length }} задач
+          }
+        </span>
+        <progress
+          [value]="currentWork.steps.length"
+          [max]="study().tasks.length"
+          [attr.aria-label]="'Прогресс: ' + study().title"
+        ></progress>
+      </div>
+    }
+  </div>
+  <div class="case-meta">
+    <span>{{ study().category }}</span>
+    <span>{{ study().duration }}</span>
+    <span>{{ study().level }}</span>
+  </div>
+  <span class="case-action">{{ action() }}</span>
+</a>

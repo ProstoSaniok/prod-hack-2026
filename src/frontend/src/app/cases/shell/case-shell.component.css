@@ -1,0 +1,161 @@
+:host {
+  display: block;
+}
+
+.case-layout {
+  display: flex;
+  min-height: 100dvh;
+}
+
+.case-content {
+  flex: 1;
+  min-width: 0;
+  container-type: inline-size;
+}
+
+main {
+  container-type: inline-size;
+  max-width: 1360px;
+  min-height: 100dvh;
+  margin: 0 auto;
+  padding: 40px;
+}
+
+.sidebar-account {
+  display: grid;
+  gap: 8px;
+  color: var(--prodguild-text);
+}
+
+.sidebar-account svg {
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  fill: none;
+  stroke: currentcolor;
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.sidebar-account button,
+.profile-entry,
+.credits-balance {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 16px;
+  min-width: 0;
+  min-height: 56px;
+  overflow: hidden;
+  padding: 14px 16px;
+  border-radius: 20px;
+  color: var(--prodguild-text);
+  font-size: var(--prodguild-font-body);
+  font-weight: 500;
+  line-height: 24px;
+  text-decoration: none;
+}
+
+.credits-balance {
+  padding-inline: 14px;
+  background: var(--prodguild-surface-raised);
+  font-variant-numeric: tabular-nums;
+}
+
+.sidebar-account button > span,
+.profile-entry > span {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-align: left;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.profile-entry:hover,
+.credits-balance:hover {
+  background: var(--prodguild-hover);
+}
+
+.profile-entry:focus-visible,
+.credits-balance:focus-visible,
+.sidebar-account button:focus-visible {
+  outline: 2px solid var(--prodguild-text);
+  outline-offset: 2px;
+}
+
+.profile-entry[aria-current='page'] {
+  background: var(--prodguild-accent);
+}
+
+.storage-notice {
+  margin: 24px 40px 0;
+  padding: 16px;
+  border-radius: 12px;
+  background: var(--prodguild-surface-raised);
+  font-size: var(--prodguild-font-caption);
+}
+
+main.workspace-main {
+  max-width: none;
+  padding: 24px;
+}
+
+@media (width > 620px) {
+  app-sidebar.compact .credits-balance app-currency-amount {
+    min-width: 28px;
+    align-items: center;
+    justify-content: center;
+  }
+
+  app-sidebar.compact .sidebar-account button > span,
+  app-sidebar.compact .profile-entry > span {
+    visibility: hidden;
+    opacity: 0;
+  }
+}
+
+@media (width > 620px) and (prefers-reduced-motion: no-preference) {
+  app-sidebar.desktop-motion .credits-balance {
+    --currency-motion-duration: var(--sidebar-motion-duration);
+    --currency-motion-easing: var(--sidebar-motion-easing);
+  }
+
+  app-sidebar.desktop-motion .sidebar-account button > span,
+  app-sidebar.desktop-motion .profile-entry > span {
+    transition:
+      opacity var(--sidebar-motion-duration) var(--sidebar-motion-easing),
+      visibility var(--sidebar-motion-duration);
+  }
+}
+
+@media (width <= 1000px) {
+  main {
+    padding: 32px 24px;
+  }
+
+  .storage-notice {
+    margin-inline: 24px;
+  }
+}
+
+@media (width <= 620px) {
+  .case-layout {
+    --prodguild-page-heading-inset: 56px;
+    --sidebar-mobile-toggle-top: 16px;
+    --sidebar-mobile-toggle-left: 16px;
+  }
+
+  main {
+    padding: 16px;
+  }
+
+  main.workspace-main {
+    padding: 16px 16px 20px;
+  }
+
+  .storage-notice {
+    margin: 0 16px 16px;
+  }
+}

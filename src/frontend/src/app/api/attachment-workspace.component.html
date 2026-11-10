@@ -1,0 +1,176 @@
+<section [attr.aria-label]="title()">
+  <header class="maximize-toolbar">
+    <h3>{{ title() }}</h3>
+    @if (allowMaximize() && maximize.available) {
+      <button
+        #expand
+        tuiButton
+        appearance="flat"
+        size="s"
+        type="button"
+        [attr.aria-expanded]="maximize.expanded()"
+        [attr.aria-controls]="maximize.id"
+        (click)="maximize.toggle(expand)"
+      >
+        <app-product-icon [name]="maximize.expanded() ? 'collapse' : 'expand'" />
+        {{ maximize.expanded() ? 'Свернуть код' : 'Развернуть код' }}
+      </button>
+    }
+  </header>
+  @if (loading()) {
+    <app-loading-state label="Загружаем приложения…" />
+  }
+  @if (error()) {
+    <p role="alert">{{ error() }}</p>
+    <div class="actions">
+      @if (!pending()?.rejected && (pending() || dirty())) {
+        <button
+          tuiButton
+          appearance="secondary"
+          size="s"
+          type="button"
+          [disabled]="activeWork() || disabled()"
+          (click)="flush(true)"
+        >
+          Повторить сохранение приложений
+        </button>
+      }
+      @if (!pending() || pending()?.rejected) {
+        <button
+          tuiButton
+          appearance="secondary"
+          size="s"
+          type="button"
+          [disabled]="activeWork()"
+          (click)="reload()"
+        >
+          Обновить приложения
+        </button>
+      }
+      @if (drafts().size) {
+        <button tuiButton appearance="flat" size="s" type="button" (click)="downloadDrafts()">
+          Скачать черновики приложений
+        </button>
+        <button
+          tuiButton
+          appearance="flat"
+          size="s"
+          type="button"
+          [disabled]="activeWork() || !!pending()"
+          (click)="discard()"
+        >
+          Загрузить серверную версию
+        </button>
+      }
+    </div>
+  }
+  @if (uploads().length || pending()?.rejected) {
+    <p role="status">Несохранённые загрузки: {{ uploads().length || 1 }}</p>
+    <div class="actions">
+      @if (!pending() || pending()?.rejected) {
+        <button
+          tuiButton
+          appearance="secondary"
+          size="s"
+          type="button"
+          [disabled]="activeWork() || disabled() || readOnly()"
+          (click)="retryUpload()"
+        >
+          Повторить загрузку с другим именем
+        </button>
+      }
+      <button tuiButton appearance="flat" size="s" type="button" (click)="downloadUploads()">
+        Скачать несохранённые файлы
+      </button>
+      @if (!pending() || pending()?.rejected) {
+        <button
+          tuiButton
+          appearance="flat"
+          size="s"
+          type="button"
+          [disabled]="activeWork()"
+          (click)="discardUploads()"
+        >
+          Отменить несохранённые загрузки
+        </button>
+      }
+    </div>
+  }
+  @if (storageNotice()) {
+    <p role="status">{{ storageNotice() }}</p>
+  }
+  @if (!readOnly()) {
+    <input #uploadInput type="file" multiple hidden [id]="inputId" (change)="upload($event)" />
+    <div class="actions file-actions">
+      <button
+        tuiButton
+        appearance="secondary"
+        size="s"
+        type="button"
+        [disabled]="activeWork() || loading() || disabled() || !!pending()"
+        (click)="creating.set(true)"
+      >
+        Создать файл
+      </button>
+      <button
+        tuiButton
+        appearance="secondary"
+        size="s"
+        type="button"
+        [disabled]="activeWork() || loading() || disabled() || !!pending()"
+        (click)="uploadInput.click()"
+      >
+        Загрузить файлы
+      </button>
+    </div>
+    @if (creating()) {
+      <form class="actions" (submit)="$event.preventDefault(); create()">
+        <tui-textfield [tuiTextfieldCleaner]="false">
+          <label tuiLabel [for]="inputId + '-path'">Путь нового приложения</label>
+          <input
+            tuiTextfield
+            [id]="inputId + '-path'"
+            [formControl]="newPath"
+            placeholder="examples/solution.py"
+          />
+        </tui-textfield>
+        <button
+          tuiButton
+          appearance="accent"
+          size="s"
+          type="submit"
+          [disabled]="activeWork() || newPath.invalid || disabled()"
+        >
+          Создать приложение
+        </button>
+        <button tuiButton appearance="flat" size="s" type="button" (click)="creating.set(false)">
+          Отмена
+        </button>
+      </form>
+    }
+    <p class="limits">До 10 МиБ на файл · до 50 МиБ и 100 файлов</p>
+  }
+  <div class="attachment-editor" [hidden]="readOnly() && !files().length">
+    <app-repository-editor
+      [files]="documents()"
+      [scopeId]="prefix()"
+      [selectedId]="selected()"
+      [content]="content()"
+      [readOnly]="readOnly() || disabled() || fileLoading() || importing() || !!pending()"
+      [busy]="activeWork() || loading() || fileLoading()"
+      [status]="status()"
+      [showExplorer]="true"
+      [responsiveExplorer]="true"
+      [allowCreate]="false"
+      [showSave]="false"
+      [explorerLabel]="title()"
+      emptyTitle=""
+      [emptyDescription]="readOnly() ? 'Приложений нет.' : 'Создайте файл или загрузите свой.'"
+      (fileSelect)="select($event)"
+      (contentChange)="edit($event)"
+      (save)="flush()"
+      (remove)="remove()"
+      (download)="download()"
+    />
+  </div>
+</section>

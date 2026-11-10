@@ -1,0 +1,265 @@
+:host {
+  display: block;
+  min-width: 0;
+}
+
+[hidden] {
+  display: none !important;
+}
+
+.back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding-block: 8px;
+  color: var(--ink);
+  text-decoration: none;
+}
+
+.back-link:hover {
+  text-decoration: underline;
+}
+
+.page-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 24px;
+  margin: 16px 0 20px;
+}
+
+.page-heading > div {
+  flex: 1;
+  min-width: min(100%, 280px);
+}
+
+.heading-status {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.save-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--prodguild-font-caption);
+}
+
+h1 {
+  margin: 8px 0;
+  font-size: var(--prodguild-font-title);
+  line-height: 1.2;
+  font-weight: 500;
+  overflow-wrap: anywhere;
+}
+
+h2 {
+  margin: 0 0 16px;
+  font-size: var(--prodguild-font-section);
+  font-weight: 500;
+}
+
+p {
+  line-height: 1.5;
+}
+
+.page-heading p {
+  margin: 0;
+  color: var(--muted);
+}
+
+.page-heading > .publish-controls {
+  flex: 0 1 320px;
+  display: grid;
+  gap: 8px;
+}
+
+.publish-controls a,
+.publish-dialog a {
+  color: var(--ink);
+  line-height: 1.5;
+  text-underline-offset: 3px;
+}
+
+.publish-dialog {
+  max-block-size: calc(100dvh - 11rem);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.publish-dialog .actions {
+  margin-top: 24px;
+}
+
+.publish-dialog > a {
+  display: block;
+  margin-top: 16px;
+}
+
+.status {
+  display: inline-flex;
+  padding: 6px 12px;
+  border-radius: 8px;
+  background: var(--prodguild-surface-muted);
+  font-size: var(--prodguild-font-caption);
+}
+
+.section-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 24px;
+  padding: 6px;
+  width: fit-content;
+  max-width: 100%;
+  border-radius: 18px;
+  background: var(--prodguild-surface-muted);
+}
+
+.section-nav a {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 12px 18px;
+  border-radius: 12px;
+  text-decoration: none;
+  color: var(--ink);
+}
+
+.section-nav a:hover {
+  background: var(--prodguild-hover);
+}
+
+.section-nav a[aria-current='page'] {
+  background: var(--prodguild-surface-raised);
+  font-weight: 500;
+}
+
+.details,
+.reference-start,
+.confirmation {
+  padding: clamp(20px, 3vw, 32px);
+  background: var(--prodguild-surface);
+  border-radius: var(--prodguild-radius-lg);
+}
+
+.details {
+  width: 100%;
+}
+
+.description {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  margin: 0 0 32px;
+}
+
+.reference-start p {
+  max-width: 72ch;
+  color: var(--muted);
+}
+
+.reference-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  align-self: center;
+  font-size: var(--prodguild-font-caption);
+}
+
+.skills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.skills li {
+  display: grid;
+  gap: 8px;
+  padding: 16px;
+  border-radius: 12px;
+  background: var(--prodguild-surface-muted);
+}
+
+.message {
+  margin: 16px 0;
+  padding: 16px 20px;
+  border-radius: 16px;
+  background: var(--prodguild-surface);
+  line-height: 1.5;
+}
+
+.error {
+  color: var(--tui-text-negative);
+}
+
+.notice,
+.save-hint {
+  margin: 16px 0;
+  line-height: 1.5;
+}
+
+.save-hint {
+  color: var(--muted);
+}
+
+.case-actions,
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.case-actions {
+  margin-top: 24px;
+}
+
+.confirmation {
+  margin-top: 20px;
+}
+
+a:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 3px;
+}
+
+@media (width <= 620px) {
+  h1 {
+    font-size: 28px;
+  }
+
+  .page-heading > .publish-controls {
+    flex-basis: 100%;
+    width: 100%;
+  }
+
+  .section-nav {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    width: 100%;
+  }
+
+  .section-nav a {
+    flex-direction: column;
+    justify-content: flex-start;
+    gap: 6px;
+    min-width: 0;
+    text-align: center;
+    padding: 10px 6px;
+    font-size: var(--prodguild-font-caption);
+    line-height: 20px;
+  }
+
+  .actions > button {
+    width: 100%;
+  }
+}

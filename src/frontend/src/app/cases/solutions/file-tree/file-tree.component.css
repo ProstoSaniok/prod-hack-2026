@@ -1,0 +1,136 @@
+:host {
+  display: block;
+  min-width: 0;
+}
+
+ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+li > button {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  min-height: 36px;
+  padding: 6px 8px;
+  border: 0;
+  border-radius: var(--prodguild-radius-sm);
+  background: transparent;
+  color: var(--prodguild-text);
+  text-align: left;
+  font: inherit;
+  font-size: var(--prodguild-font-caption);
+  cursor: pointer;
+}
+
+li > button:hover {
+  background: var(--prodguild-hover);
+}
+
+li > button.selected {
+  background: var(--prodguild-accent);
+  color: var(--prodguild-text);
+}
+
+button:focus-visible {
+  outline: 2px solid var(--prodguild-text);
+  outline-offset: -2px;
+}
+
+.file-icon {
+  flex-shrink: 0;
+  width: 17px;
+  height: 17px;
+  color: var(--prodguild-text-secondary);
+}
+
+.directory-chevron,
+.chevron-spacer {
+  flex: 0 0 12px;
+  width: 12px;
+  height: 12px;
+}
+
+.file-name {
+  overflow: hidden;
+  min-width: 0;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.empty {
+  padding: 12px;
+  color: var(--prodguild-text-secondary);
+  font-size: var(--prodguild-font-caption);
+}
+
+.new-file {
+  padding-block: 2px 8px;
+  padding-inline-end: 4px;
+}
+
+.new-file-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  padding-inline-start: 18px;
+}
+
+tui-textfield {
+  flex: 1 1 auto;
+  min-width: 0;
+  border-radius: 4px;
+  background: var(--prodguild-surface-raised);
+  box-shadow: none;
+
+  --tui-height-s: 32px;
+}
+
+input[tuiTextfield]:focus {
+  outline: 2px solid var(--prodguild-text);
+  outline-offset: -2px;
+}
+
+input[tuiTextfield][aria-invalid='true'] {
+  outline: 2px solid var(--tui-status-negative);
+  outline-offset: -2px;
+}
+
+input {
+  padding-inline: 6px;
+  font-size: var(--prodguild-font-caption);
+}
+
+input[tuiTextfield][tuiAppearance] {
+  box-shadow: none;
+}
+
+.create-action {
+  flex: 0 0 28px;
+  width: 28px;
+  height: 32px;
+  padding: 4px;
+  border-radius: 4px;
+}
+
+.create-action app-product-icon {
+  width: 16px;
+  height: 16px;
+}
+
+.creation-hint,
+.validation-error {
+  margin: 4px 0 0 39px;
+  color: var(--prodguild-text-secondary);
+  font-size: 12px;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+
+.validation-error {
+  color: var(--tui-status-negative);
+}

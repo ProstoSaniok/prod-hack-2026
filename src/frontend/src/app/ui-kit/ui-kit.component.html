@@ -1,0 +1,302 @@
+<main class="ui-page">
+  <app-site-header />
+
+  <section class="intro-panel" aria-labelledby="ui-kit-title">
+    <div>
+      <p class="eyebrow">Основные элементы</p>
+      <h1 id="ui-kit-title">Компоненты<br />интерфейса</h1>
+    </div>
+    <p class="intro-copy">
+      Единый стиль продукта: поля, кнопки, ссылки, раскрывающиеся блоки и карточки.
+    </p>
+  </section>
+
+  <nav class="section-nav" aria-label="Разделы UI kit">
+    <a [routerLink]="[]" fragment="fields">Поля</a>
+    <a [routerLink]="[]" fragment="buttons">Кнопки</a>
+    <a [routerLink]="[]" fragment="navigation">Ссылки</a>
+    <a [routerLink]="[]" fragment="containers">Контейнеры</a>
+    <a [routerLink]="[]" fragment="cards">Карточки</a>
+    <a href="/sidebar">Sidebar <span aria-hidden="true">↗</span></a>
+  </nav>
+
+  <section class="showcase-section" id="fields" aria-labelledby="fields-title">
+    <div class="section-title">
+      <span>01</span>
+      <div>
+        <p>Поля ввода</p>
+        <h2 id="fields-title">Поиск и формы</h2>
+      </div>
+    </div>
+
+    <div class="demo-panel fields-demo">
+      <tui-textfield class="search-field" [tuiTextfieldCleaner]="false">
+        <input tuiTextfield type="search" aria-label="Поиск" placeholder="Найти компонент" />
+        <svg aria-hidden="true" viewBox="0 0 24 24">
+          <circle cx="11" cy="11" r="6.5"></circle>
+          <path d="m16 16 4 4"></path>
+        </svg>
+      </tui-textfield>
+
+      <div class="field-grid">
+        <div class="text-field">
+          <tui-textfield [tuiTextfieldCleaner]="false">
+            <label tuiLabel>Название</label>
+            <input tuiTextfield type="text" placeholder="Введите текст" />
+          </tui-textfield>
+        </div>
+        <div class="text-field">
+          <tui-textfield [tuiTextfieldCleaner]="false">
+            <label tuiLabel>Категория</label>
+            <input tuiTextfield type="text" value="Основная" aria-describedby="field-hint" />
+          </tui-textfield>
+          <small id="field-hint">Поле с заполненным состоянием</small>
+        </div>
+        <div class="text-field" [class.text-field-error]="email.invalid">
+          <tui-textfield [tuiTextfieldCleaner]="false">
+            <label tuiLabel>Почта</label>
+            <input
+              tuiTextfield
+              type="email"
+              [formControl]="email"
+              [invalid]="email.invalid"
+              [attr.aria-invalid]="email.invalid"
+              [attr.aria-describedby]="email.invalid ? 'field-error' : null"
+            />
+          </tui-textfield>
+          <small id="field-error" aria-live="polite">{{
+            email.invalid ? 'Проверьте адрес почты' : ''
+          }}</small>
+        </div>
+        <label class="text-field comment-field">
+          <span>Комментарий</span>
+          <textarea tuiAppearance="textfield" rows="3" placeholder="Добавьте описание"></textarea>
+        </label>
+      </div>
+    </div>
+  </section>
+
+  <section class="showcase-section" id="buttons" aria-labelledby="buttons-title">
+    <div class="section-title">
+      <span>02</span>
+      <div>
+        <p>Действия</p>
+        <h2 id="buttons-title">Кнопки</h2>
+      </div>
+    </div>
+
+    <div class="demo-panel button-demo">
+      <div class="button-row">
+        <div class="button-stack">
+          <span class="button-stack-back" aria-hidden="true"></span>
+          <span class="button-stack-middle" aria-hidden="true"></span>
+          <button
+            tuiButton
+            appearance="primary"
+            size="l"
+            type="button"
+            class="ui-button create-example"
+          >
+            Создать
+          </button>
+        </div>
+        <button tuiButton appearance="accent" size="l" type="button" class="ui-button">
+          Акцентная
+        </button>
+        <button tuiButton appearance="secondary" size="l" type="button" class="ui-button">
+          Вторичная
+        </button>
+        <button tuiButton appearance="outline" size="l" type="button" class="ui-button">
+          Контурная
+        </button>
+        <button
+          tuiButton
+          appearance="primary"
+          size="l"
+          type="button"
+          class="ui-button create-example"
+          disabled
+        >
+          Недоступна
+        </button>
+      </div>
+
+      <div class="button-row compact-row">
+        <button
+          tuiIconButton
+          appearance="primary"
+          size="m"
+          type="button"
+          class="icon-button create-example"
+          aria-label="Добавить"
+        >
+          <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"></path></svg>
+        </button>
+        <button
+          tuiIconButton
+          appearance="secondary"
+          size="m"
+          type="button"
+          class="icon-button"
+          aria-label="Открыть настройки"
+        >
+          <svg aria-hidden="true" viewBox="0 0 24 24">
+            <circle cx="12" cy="12" r="3"></circle>
+            <path
+              d="M19 12a7 7 0 0 0-.1-1l2-1.5-2-3.4-2.4 1A7 7 0 0 0 15 6l-.3-2.6h-4L10.4 6A7 7 0 0 0 9 7.1l-2.4-1-2 3.4L6.7 11a7 7 0 0 0 0 2l-2.1 1.5 2 3.4 2.4-1A7 7 0 0 0 10.4 18l.3 2.6h4L15 18a7 7 0 0 0 1.5-1.1l2.4 1 2-3.4-2-1.5a7 7 0 0 0 .1-1Z"
+            ></path>
+          </svg>
+        </button>
+        <button
+          tuiButton
+          appearance="primary"
+          size="m"
+          type="button"
+          class="small-button create-example"
+        >
+          Маленькая кнопка
+        </button>
+        <button tuiButton appearance="accent" size="m" type="button" class="small-button">
+          Сохранить
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <section class="showcase-section" id="navigation" aria-labelledby="navigation-title">
+    <div class="section-title">
+      <span>03</span>
+      <div>
+        <p>Навигация</p>
+        <h2 id="navigation-title">Ссылки и списки</h2>
+      </div>
+    </div>
+
+    <div class="navigation-grid">
+      <div class="demo-panel link-demo">
+        <a class="text-link" [routerLink]="[]" fragment="navigation"
+          >Обычная ссылка <span aria-hidden="true">↗</span></a
+        >
+        <a class="underlined-link" [routerLink]="[]" fragment="navigation"
+          >Ссылка с подчёркиванием</a
+        >
+        <a class="arrow-link" [routerLink]="[]" fragment="cards">
+          <span>
+            <small>Следующий раздел</small>
+            Карточки
+          </span>
+          <span aria-hidden="true">→</span>
+        </a>
+      </div>
+
+      <div class="dropdown-list">
+        <app-accordion
+          panelId="component-content"
+          heading="Что входит в компонент?"
+          [expanded]="true"
+        >
+          <p>Заголовок, основной контент и необязательное действие.</p>
+        </app-accordion>
+        <app-accordion panelId="component-states" heading="Как использовать состояния?">
+          <p>Показывайте состояния загрузки, ошибки, пустого результата и успеха явно.</p>
+        </app-accordion>
+        <app-accordion panelId="component-mobile" heading="Подходит ли для мобильных?">
+          <p>Все элементы перестраиваются в одну колонку на узком экране.</p>
+        </app-accordion>
+      </div>
+    </div>
+  </section>
+
+  <section class="showcase-section" id="containers" aria-labelledby="containers-title">
+    <div class="section-title">
+      <span>04</span>
+      <div>
+        <p>Поверхности</p>
+        <h2 id="containers-title">Контейнеры</h2>
+      </div>
+    </div>
+
+    <div class="container-grid">
+      <article class="surface surface-paper">
+        <span class="surface-label">Paper</span>
+        <h3>Нейтральный</h3>
+        <p>Для основного контента и спокойных информационных блоков.</p>
+      </article>
+      <article class="surface surface-glass">
+        <span class="surface-label">Glass</span>
+        <h3>Стеклянный</h3>
+        <p>Для навигации, плавающих панелей и элементов поверх контента.</p>
+      </article>
+      <article class="surface surface-accent">
+        <span class="surface-label">Accent</span>
+        <h3>Акцентный</h3>
+        <p>Для важных предложений, выбранных элементов и CTA-блоков.</p>
+      </article>
+      <article class="surface surface-dark">
+        <span class="surface-label">Dark</span>
+        <h3>Контрастный</h3>
+        <p>Для сильного смыслового акцента и инверсного контента.</p>
+      </article>
+    </div>
+  </section>
+
+  <section class="showcase-section" id="cards" aria-labelledby="cards-title">
+    <div class="section-title">
+      <span>05</span>
+      <div>
+        <p>Контент</p>
+        <h2 id="cards-title">Карточки</h2>
+      </div>
+    </div>
+
+    <div class="card-grid">
+      <article class="content-card image-card">
+        <div class="card-image">
+          <img src="/imgs/logos/mockup_iphone.png" alt="Экран мобильного приложения" />
+          <span class="card-badge">С изображением</span>
+        </div>
+        <div class="card-content">
+          <p class="card-meta">Мобильный продукт</p>
+          <h3>Визуальная карточка</h3>
+          <p>Изображение поддерживает содержание, но не заменяет заголовок и описание.</p>
+          <a [routerLink]="[]" fragment="cards">Подробнее <span aria-hidden="true">→</span></a>
+        </div>
+      </article>
+
+      <article class="content-card text-card">
+        <div class="card-content">
+          <span class="card-badge card-badge-dark">Без изображения</span>
+          <p class="card-meta">Информационный блок</p>
+          <h3>Текстовая карточка</h3>
+          <p>Подходит для описания функции, сценария или важного преимущества продукта.</p>
+          <a [routerLink]="[]" fragment="cards">Открыть <span aria-hidden="true">→</span></a>
+        </div>
+      </article>
+
+      <article class="metric-card">
+        <p>Активные элементы</p>
+        <strong>24</strong>
+        <span class="status-pill"><i aria-hidden="true"></i> Система работает</span>
+      </article>
+
+      <article class="compact-card">
+        <div class="compact-icon" aria-hidden="true">T</div>
+        <div>
+          <p>Компактная карточка</p>
+          <span>Для коротких списков и быстрых действий</span>
+        </div>
+        <button
+          tuiButton
+          appearance="primary"
+          size="m"
+          type="button"
+          aria-label="Открыть компактную карточку"
+        >
+          →
+        </button>
+      </article>
+    </div>
+  </section>
+
+  <footer class="footer" aria-label="Подвал страницы"></footer>
+</main>

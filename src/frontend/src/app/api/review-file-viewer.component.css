@@ -1,0 +1,42 @@
+:host {
+  display: block;
+  min-width: 0;
+}
+
+:host-context([data-code-maximize-target]) {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.selection-hint {
+  flex-shrink: 0;
+  margin: 12px 0;
+  color: var(--prodguild-text-secondary);
+  font-size: var(--prodguild-font-caption);
+}
+
+.file-inline {
+  padding: 16px 20px;
+  background: var(--prodguild-surface-muted);
+  font-size: var(--prodguild-font-caption);
+  overflow-wrap: anywhere;
+}
+
+.file-inline p {
+  margin: 8px 0;
+  white-space: pre-wrap;
+}
+
+.action {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.file-inline:focus-visible {
+  outline: 2px solid var(--prodguild-text);
+  outline-offset: -2px;
+}

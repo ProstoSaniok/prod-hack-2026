@@ -1,0 +1,32 @@
+<!-- Escape bubbles from focusable controls inside this landmark. -->
+<!-- eslint-disable-next-line @angular-eslint/template/interactive-supports-focus -->
+<header class="topbar" [class.menu-open]="menuOpen()" (keydown.escape)="closeMenu(menuToggle)">
+  <a class="brand" href="/" aria-label="prodguild">
+    <img src="/imgs/logos/main-logo.svg" alt="prodguild" width="44" height="44" />
+  </a>
+  <button
+    #menuToggle
+    tuiButton
+    appearance="flat"
+    size="m"
+    type="button"
+    class="menu-toggle"
+    aria-controls="main-navigation"
+    [attr.aria-expanded]="menuOpen()"
+    [attr.aria-label]="menuOpen() ? 'Закрыть меню' : 'Открыть меню'"
+    (click)="toggleMenu()"
+  >
+    <span class="menu-icon" aria-hidden="true"><span></span><span></span></span>
+  </button>
+  <nav id="main-navigation" aria-label="Основная навигация">
+    <a [routerLink]="[]" fragment="product" (click)="closeMenu()">О продукте</a>
+    <a [routerLink]="[]" fragment="team" (click)="closeMenu()">О команде</a>
+    <a [routerLink]="[]" fragment="link-two" (click)="closeMenu()">Ссылка 2</a>
+    <a [routerLink]="[]" fragment="link-three" (click)="closeMenu()">Ссылка 3</a>
+  </nav>
+  <div class="header-haze" aria-hidden="true">
+    <span class="header-oval header-oval-left"></span>
+    <span class="header-oval header-oval-center"></span>
+    <span class="header-oval header-oval-right"></span>
+  </div>
+</header>

@@ -1,0 +1,149 @@
+<div class="page-heading">
+  <div>
+    <h1 tabindex="-1">Кейсы</h1>
+  </div>
+  <a tuiButton appearance="accent" size="l" routerLink="/admin/new">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14 M5 12h14" /></svg>
+    Создать кейс
+  </a>
+</div>
+<section class="cases-panel" aria-label="Созданные кейсы" [attr.aria-busy]="repository.loading()">
+  <div class="list-toolbar">
+    <tui-textfield class="search-field" [tuiTextfieldCleaner]="false">
+      <input
+        tuiTextfield
+        type="search"
+        aria-label="Поиск по названию кейса"
+        placeholder="Поиск по названию кейса"
+        [formControl]="search"
+        aria-describedby="admin-search-hint"
+      />
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <circle cx="10.5" cy="10.5" r="6.5" />
+        <path d="m16 16 4 4" />
+      </svg>
+    </tui-textfield>
+    <tui-textfield class="status-field" [tuiTextfieldCleaner]="false">
+      <label tuiLabel>Статус</label>
+      <select tuiTextfield [formControl]="statusFilter" aria-label="Статус кейсов"></select>
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg>
+      <tui-data-list *tuiTextfieldDropdown>
+        @for (status of statuses; track status.value) {
+          <button tuiOption type="button" [value]="status.label">{{ status.label }}</button>
+        }
+      </tui-data-list>
+    </tui-textfield>
+    <div class="list-caption">
+      <p id="admin-search-hint">Поиск по кейсам на этой странице.</p>
+      @if (!repository.loading() && !repository.error()) {
+        <p class="result-count" aria-live="polite" aria-atomic="true">
+          @if (searchValue()) {
+            Найдено: {{ filteredCases().length }} из {{ repository.cases().length }}
+          } @else {
+            На странице: {{ repository.cases().length }}
+          }
+        </p>
+      }
+    </div>
+  </div>
+  @if (repository.loading()) {
+    <div class="list-feedback">
+      <app-loading-state label="Загружаем кейсы…" [skeleton]="!repository.cases().length" />
+    </div>
+  }
+  @if (repository.error()) {
+    <div class="list-feedback error-state">
+      <p role="alert">{{ repository.error() }}</p>
+      <button
+        tuiButton
+        appearance="secondary"
+        size="m"
+        type="button"
+        [disabled]="repository.loading()"
+        (click)="repository.retry()"
+      >
+        Повторить
+      </button>
+    </div>
+  }
+  <ul class="case-list">
+    @for (record of filteredCases(); track record.id) {
+      <li>
+        <a class="case-row" [routerLink]="['/admin', record.id, 'edit']">
+          <span class="case-summary">
+            <strong>{{ record.name || 'Новый кейс' }}</strong>
+            <span class="case-excerpt">{{ record.description }}</span>
+            <span class="case-date">Создан {{ record.createdAt | date: 'dd.MM.yyyy' }}</span>
+          </span>
+          <span class="case-status" [class.published]="record.status === 'published'">
+            {{
+              record.status === 'draft'
+                ? 'Черновик'
+                : record.status === 'archived'
+                  ? 'Архив'
+                  : 'Опубликован'
+            }}
+          </span>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 5 7 7-7 7" /></svg>
+        </a>
+      </li>
+    } @empty {
+      @if (!repository.loading() && !repository.error()) {
+        <li class="empty-state">
+          <h2>
+            {{ searchValue() || repository.status() ? 'Кейсы не найдены' : 'Пока нет кейсов' }}
+          </h2>
+          <p>
+            {{
+              searchValue() || repository.status()
+                ? 'Измените статус или название в поиске.'
+                : 'Создайте первый кейс для участников.'
+            }}
+          </p>
+          @if (searchValue()) {
+            <button
+              tuiButton
+              appearance="secondary"
+              size="m"
+              type="button"
+              (click)="search.reset()"
+            >
+              Сбросить поиск
+            </button>
+          }
+        </li>
+      }
+    }
+  </ul>
+  @if (repository.offset() > 0 || repository.hasNext()) {
+    <nav class="pagination" aria-label="Страницы кейсов">
+      <button
+        tuiButton
+        appearance="secondary"
+        size="m"
+        type="button"
+        aria-label="Предыдущая страница кейсов"
+        [disabled]="repository.loading() || repository.offset() === 0"
+        (click)="page(-1)"
+      >
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m14 6-6 6 6 6" /></svg>
+        Назад
+      </button>
+      <span aria-live="polite" aria-atomic="true">
+        Страница {{ repository.offset() / repository.pageSize + 1 }}
+      </span>
+      <button
+        tuiButton
+        appearance="secondary"
+        size="m"
+        type="button"
+        aria-label="Следующая страница кейсов"
+        [disabled]="repository.loading() || !repository.hasNext()"
+        (click)="page(1)"
+      >
+        Далее
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m10 6 6 6-6 6" /></svg>
+      </button>
+    </nav>
+  }
+</section>

@@ -1,0 +1,8 @@
+node_modules/
+.angular/
+dist/
+out-tsc/
+playwright-report/
+test-results/
+public/
+package-lock.json

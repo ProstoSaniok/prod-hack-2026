@@ -1,0 +1,17 @@
+<ng-content select="[splitStart]" />
+<div
+  #handle
+  class="split-handle"
+  role="separator"
+  tabindex="0"
+  aria-label="Ширина панели информации"
+  aria-orientation="vertical"
+  [attr.aria-controls]="primaryId() + ' ' + secondaryId()"
+  aria-valuemin="280"
+  aria-valuemax="280"
+  aria-valuenow="280"
+  title="Перетащите или используйте ← и →. Home — минимум, End — максимум, Enter — сброс."
+>
+  <span aria-hidden="true"></span>
+</div>
+<ng-content select="[splitEnd]" />

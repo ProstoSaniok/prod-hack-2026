@@ -1,0 +1,44 @@
+:host {
+  display: block;
+  min-height: 100svh;
+  color: var(--ink);
+  background: var(--paper);
+  font-family: 'Tinkoff Sans', Arial, sans-serif;
+}
+
+.auth-layout {
+  display: grid;
+  grid-template-rows: 1fr;
+  min-height: 100svh;
+}
+
+main {
+  display: grid;
+  justify-items: center;
+  align-content: center;
+  gap: 16px;
+  min-width: 0;
+  padding: 32px 24px 48px;
+}
+
+.route-placeholder {
+  display: none;
+}
+
+.storage-notice {
+  width: 100%;
+  max-width: 440px;
+  margin: 0;
+  padding: 16px;
+  border-radius: var(--prodguild-radius-sm);
+  background: var(--prodguild-surface-raised);
+  color: var(--ink);
+  font-size: var(--prodguild-font-caption);
+  line-height: 1.5;
+}
+
+@media (width <= 620px) {
+  main {
+    padding: 24px 16px 32px;
+  }
+}
